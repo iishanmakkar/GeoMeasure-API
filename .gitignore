@@ -55,3 +55,6 @@ tests/fixtures/sample_shp.zip
 tests/fixtures/sample.gpkg
 tests/fixtures/sample.tif
 tests/fixtures/sample.kmz
+
+Lib/
+Scripts/

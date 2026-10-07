@@ -58,14 +58,18 @@ def _polygon_geodesic_area(polygon: Polygon) -> float:
         return 0.0
 
     # Exterior shell
-    lons, lats = zip(*polygon.exterior.coords)
+    coords = polygon.exterior.coords
+    lons = [c[0] for c in coords]
+    lats = [c[1] for c in coords]
     area, _ = _GEOD.polygon_area_perimeter(lons, lats)
     total = abs(area)
 
     # Subtract holes
     for interior in polygon.interiors:
-        lons, lats = zip(*interior.coords)
-        hole_area, _ = _GEOD.polygon_area_perimeter(lons, lats)
+        icoords = interior.coords
+        hlons = [c[0] for c in icoords]
+        hlats = [c[1] for c in icoords]
+        hole_area, _ = _GEOD.polygon_area_perimeter(hlons, hlats)
         total -= abs(hole_area)
 
     return max(total, 0.0)
@@ -78,7 +82,9 @@ def projected_area(polygon: Polygon, epsg: int) -> float:
     transformer = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
 
     def _project_ring(ring: LinearRing) -> list[tuple[float, float]]:
-        xs, ys = zip(*ring.coords)
+        coords = ring.coords
+        xs = [c[0] for c in coords]
+        ys = [c[1] for c in coords]
         px, py = transformer.transform(xs, ys)
         return list(zip(px, py))
 
