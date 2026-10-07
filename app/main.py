@@ -72,7 +72,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 # Exception handlers
 register_exception_handlers(app)
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore  
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 
 # Routers
 API_PREFIX = "/api/v1"
