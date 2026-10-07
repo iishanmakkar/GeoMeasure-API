@@ -142,38 +142,46 @@ def measure_feature(
     bbox_dims = bounding_box_dimensions(bounds)
     bbox = BoundingBox(**bbox_dims)
 
-    # Centroid
-    centroid_dict = compute_centroid(geom)
-    centroid = Centroid(**centroid_dict)
-
-    rep_pt_dict = representative_point(geom)
-    rep_pt = Centroid(**rep_pt_dict)
-
-    # Area (polygons)
-    area: AreaValues | None = None
-    if isinstance(geom, _POLYGON_TYPES):
-        if method == "projected":
-            proj_crs = get_projected_crs(geom)
-            area_m2 = projected_area(geom, proj_crs.to_epsg() or 4326)
-        else:
-            area_m2 = geodesic_area(geom)
-        area = _area_values(area_m2)
-
-    # Length (lines)
-    length: LengthValues | None = None
-    if isinstance(geom, _LINE_TYPES):
-        length = _length_values(geodesic_length(geom))
-
-    # Perimeter (polygons)
-    perimeter: LengthValues | None = None
-    if isinstance(geom, _POLYGON_TYPES):
-        perimeter = _length_values(geodesic_length(geom))
-
-    # Polygon extras
+    # Centroid & Measurements
+    area = None
+    length = None
+    perimeter = None
     extras = None
-    if isinstance(geom, _POLYGON_TYPES):
-        ex = _polygon_extras(geom)
-        extras = PolygonExtras(**ex)
+    centroid = None
+    rep_pt = None
+
+    try:
+        # Centroid
+        centroid_dict = compute_centroid(geom)
+        centroid = Centroid(**centroid_dict)
+
+        rep_pt_dict = representative_point(geom)
+        rep_pt = Centroid(**rep_pt_dict)
+
+        # Area (polygons)
+        if isinstance(geom, _POLYGON_TYPES):
+            if method == "projected":
+                proj_crs = get_projected_crs(geom)
+                area_m2 = projected_area(geom, proj_crs.to_epsg() or 4326)
+            else:
+                area_m2 = geodesic_area(geom)
+            area = _area_values(area_m2)
+
+        # Length (lines)
+        if isinstance(geom, _LINE_TYPES):
+            length = _length_values(geodesic_length(geom))
+
+        # Perimeter (polygons)
+        if isinstance(geom, _POLYGON_TYPES):
+            perimeter = _length_values(geodesic_length(geom))
+
+        # Polygon extras
+        if isinstance(geom, _POLYGON_TYPES):
+            ex = _polygon_extras(geom)
+            extras = PolygonExtras(**ex)
+    except Exception as e:
+        valid = False
+        validity_reason = f"Math computation failed: {e}"
 
     return FeatureMeasurement(
         index=index,
@@ -307,10 +315,13 @@ def measure_geodataframe(
     summary_bbox = BoundingBox(**summary_bbox_dims)
 
     # Summary centroid
-    union_geom = gdf.union_all() if hasattr(gdf, "union_all") else gdf.geometry.unary_union
-    summary_centroid = (
-        Centroid(**compute_centroid(union_geom)) if union_geom and not union_geom.is_empty else None
-    )
+    summary_centroid = None
+    try:
+        union_geom = gdf.union_all() if hasattr(gdf, "union_all") else gdf.geometry.unary_union
+        if union_geom and not union_geom.is_empty:
+            summary_centroid = Centroid(**compute_centroid(union_geom))
+    except Exception as e:
+        warnings.append(f"Failed to compute summary centroid due to geometry errors: {e}")
 
     summary = Summary(
         total_area=_area_values(total_area_m2) if total_area_m2 > 0 else None,
