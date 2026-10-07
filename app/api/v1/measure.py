@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import contextlib
 import tempfile
 import time
 import uuid
@@ -210,12 +211,12 @@ async def measure_sync(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Processing error: {exc}") from exc
+        # Most file parsing errors from fiona, gdal, rasterio, pyogrio surface here.
+        # It's safer to treat these as 400 Bad Request for user-provided files.
+        raise HTTPException(status_code=400, detail=f"Processing error: {exc}") from exc
     finally:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp_path)
-        except OSError:
-            pass
 
 
 @router.post(
