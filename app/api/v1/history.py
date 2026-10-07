@@ -71,6 +71,7 @@ async def get_history_entry(
         raise HTTPException(status_code=404, detail=f"History entry '{entry_id}' not found")
 
     from typing import cast
+
     return cast(MeasurementReport, MeasurementReport.model_validate_json(entry.report_json))
 
 
