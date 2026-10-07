@@ -68,7 +68,7 @@ def _polygon_geodesic_area(polygon: Polygon) -> float:
         hole_area, _ = _GEOD.polygon_area_perimeter(hlons, hlats)
         total -= abs(hole_area)
 
-    return max(total, 0.0)
+    return float(max(total, 0.0))
 
 
 def projected_area(polygon: Polygon, epsg: int) -> float:

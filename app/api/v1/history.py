@@ -70,7 +70,8 @@ async def get_history_entry(
     if not entry:
         raise HTTPException(status_code=404, detail=f"History entry '{entry_id}' not found")
 
-    return MeasurementReport.model_validate_json(entry.report_json)
+    from typing import cast
+    return cast(MeasurementReport, MeasurementReport.model_validate_json(entry.report_json))
 
 
 @router.delete(
