@@ -33,7 +33,10 @@ async def list_history(
 
     offset = (page - 1) * page_size
     rows_result = await db.execute(
-        select(HistoryEntry).order_by(HistoryEntry.created_at.desc()).offset(offset).limit(page_size)
+        select(HistoryEntry)
+        .order_by(HistoryEntry.created_at.desc())
+        .offset(offset)
+        .limit(page_size)
     )
     rows = rows_result.scalars().all()
 

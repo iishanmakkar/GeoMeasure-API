@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from shapely.geometry import Polygon
 
 from app.services.repair import geometry_validity, repair_geometry

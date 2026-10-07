@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-import math
-
-import numpy as np
 from pyproj import CRS, Geod, Transformer
 from shapely.geometry import (
     GeometryCollection,
     LinearRing,
     LineString,
     MultiLineString,
-    MultiPoint,
     MultiPolygon,
     Point,
     Polygon,
@@ -91,7 +87,7 @@ def projected_area(polygon: Polygon, epsg: int) -> float:
     proj_exterior = _project_ring(polygon.exterior)
     proj_interiors = [_project_ring(i) for i in polygon.interiors]
     proj_poly = Polygon(proj_exterior, proj_interiors)
-    return abs(proj_poly.area)
+    return float(abs(proj_poly.area))
 
 
 # ---------------------------------------------------------------------------
@@ -138,9 +134,7 @@ def _line_geodesic_length(line: LineString | LinearRing) -> float:
 # ---------------------------------------------------------------------------
 
 
-def geodesic_distance(
-    lon1: float, lat1: float, lon2: float, lat2: float
-) -> dict[str, float]:
+def geodesic_distance(lon1: float, lat1: float, lon2: float, lat2: float) -> dict[str, float]:
     """Return geodesic distance and bearings between two WGS84 points.
 
     Returns a dict with distance_m, initial_bearing_deg, final_bearing_deg.

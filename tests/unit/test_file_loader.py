@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-import os
-import zipfile
-from pathlib import Path
-
 import pytest
 
 from tests.conftest import fixture_path
@@ -20,7 +16,10 @@ class TestFileLoaderFormats:
         path = fixture_path("sample.geojson")
         gdf, _, warnings = _load_geojson(str(path))
         assert len(gdf) == 2
-        assert "Polygon" in gdf.geometry.geom_type.values or "MultiPolygon" in gdf.geometry.geom_type.values
+        assert (
+            "Polygon" in gdf.geometry.geom_type.values
+            or "MultiPolygon" in gdf.geometry.geom_type.values
+        )
 
     def test_kml_loads(self) -> None:
         from app.services.file_loader import _load_kml

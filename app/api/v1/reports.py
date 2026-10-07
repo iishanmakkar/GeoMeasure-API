@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import verify_api_key
@@ -36,9 +36,7 @@ async def export_csv(
     return Response(
         content=csv_content,
         media_type="text/csv",
-        headers={
-            "Content-Disposition": f'attachment; filename="report_{entry_id}.csv"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="report_{entry_id}.csv"'},
     )
 
 
@@ -65,7 +63,5 @@ async def export_geojson(
     return Response(
         content=json.dumps(geojson_content, indent=2),
         media_type="application/geo+json",
-        headers={
-            "Content-Disposition": f'attachment; filename="report_{entry_id}.geojson"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="report_{entry_id}.geojson"'},
     )

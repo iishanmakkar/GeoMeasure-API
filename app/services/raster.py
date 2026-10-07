@@ -42,7 +42,6 @@ def measure_raster(path: str) -> RasterMeasurement:
         RasterMeasurement with geodesic bbox and pixel dimensions.
     """
     import rasterio  # Lazy import to avoid loading at startup
-    from rasterio.crs import CRS as RioCRS
     from shapely.geometry import box
 
     warnings: list[str] = []

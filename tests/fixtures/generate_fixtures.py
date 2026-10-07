@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import io
 import os
-import struct
 import zipfile
 from pathlib import Path
 
@@ -33,8 +31,9 @@ def create_kmz() -> None:
 
 def create_shapefile_zip() -> None:
     """Create a minimal Shapefile ZIP using geopandas."""
-    import geopandas as gpd
     import tempfile
+
+    import geopandas as gpd
     from shapely.geometry import Polygon
 
     gdf = gpd.GeoDataFrame(
@@ -56,6 +55,7 @@ def create_shapefile_zip() -> None:
             zf.write(os.path.join(tmp_dir, f), f)
 
     import shutil
+
     shutil.rmtree(tmp_dir)
     print(f"Created {zip_path}")
 

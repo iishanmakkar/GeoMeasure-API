@@ -3,24 +3,19 @@
 from __future__ import annotations
 
 import os
-import shutil
-import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
 
 # Point to a test SQLite DB
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test_geomeasure.db")
 os.environ.setdefault("API_KEYS", "")  # Disable auth for tests
 
 from app.main import app
-from app.models.db import Base
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 

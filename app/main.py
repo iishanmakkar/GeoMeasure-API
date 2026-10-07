@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,14 +11,13 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+# Import routers
+from app.api.v1 import distance, history, jobs, measure, meta, reports
 from app.config import get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import RequestIDMiddleware, configure_logging
 from app.core.rate_limit import limiter
 from app.models.db import init_db
-
-# Import routers
-from app.api.v1 import meta, measure, jobs, distance, history, reports
 
 
 @asynccontextmanager
@@ -35,10 +34,22 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.api_version,
     description=(
-        "Production-quality REST API for geospatial measurements. "
-        "Supports GeoJSON, KML, KMZ, GPX, Shapefile, GeoPackage, CSV, and GeoTIFF. "
-        "Returns geodetically accurate area, length, distance, centroid, bounding box, and more."
+        "Production-quality REST API for geospatial measurements.\n\n"
+        "## Features\n"
+        "* **Geodesic accuracy**: Powered by `pyproj.Geod` over the WGS84 ellipsoid.\n"
+        "* **Multi-format support**: GeoJSON, KML, KMZ, GPX, Shapefile, GeoPackage, CSV, and GeoTIFF.\n"
+        "* **Async jobs**: Process gigabyte-scale files safely in the background.\n"
+        "* **Security**: XXE protection, zip-bomb prevention, and path traversal guards built-in.\n"
     ),
+    contact={
+        "name": "Ishan Makkar",
+        "email": "ishanmakkar651@gmail.com",
+        "url": "https://github.com/iishanmakkar/GeoMeasure-API",
+    },
+    license_info={
+        "name": "MIT License",
+        "identifier": "MIT",
+    },
     openapi_url="/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -61,7 +72,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 # Exception handlers
 register_exception_handlers(app)
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # Routers
 API_PREFIX = "/api/v1"

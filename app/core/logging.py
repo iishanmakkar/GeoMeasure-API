@@ -42,9 +42,12 @@ def configure_logging() -> None:
     )
 
 
+from typing import cast
+
+
 def get_logger(name: str = __name__) -> structlog.BoundLogger:
     """Return a bound structlog logger."""
-    return structlog.get_logger(name)
+    return cast(structlog.BoundLogger, structlog.get_logger(name))
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -70,4 +73,4 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
             status_code=response.status_code,
             elapsed_ms=elapsed_ms,
         )
-        return response
+        return cast(Response, response)

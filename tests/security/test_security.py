@@ -3,12 +3,8 @@
 from __future__ import annotations
 
 import io
-import os
-import struct
 import zipfile
-from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 
 

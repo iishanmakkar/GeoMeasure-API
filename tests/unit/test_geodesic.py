@@ -5,21 +5,17 @@ Validates known-value calculations against real-world values.
 
 from __future__ import annotations
 
-import math
-
 import pytest
 from shapely.geometry import LineString, Point, Polygon
 
+from app.services.crs import auto_utm_epsg
 from app.services.geodesic import (
     bounding_box_dimensions,
-    compute_centroid,
     count_vertices,
     geodesic_area,
     geodesic_distance,
     geodesic_length,
-    representative_point,
 )
-from app.services.crs import auto_utm_epsg
 
 
 class TestGeodesicArea:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 import tempfile
 import time
 import uuid
@@ -20,7 +19,6 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -40,7 +38,9 @@ settings = get_settings()
 
 def _save_upload(upload: UploadFile) -> tuple[str, int, bytes]:
     """Save UploadFile to a secure temp file. Returns (path, size, header)."""
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(upload.filename or "")[-1])
+    tmp = tempfile.NamedTemporaryFile(
+        delete=False, suffix=os.path.splitext(upload.filename or "")[-1]
+    )
     try:
         content = upload.file.read()
         tmp.write(content)
@@ -50,7 +50,9 @@ def _save_upload(upload: UploadFile) -> tuple[str, int, bytes]:
         tmp.close()
 
 
-def _detect_and_validate_format(header: bytes, filename: str, size_bytes: int, max_bytes: int) -> str:
+def _detect_and_validate_format(
+    header: bytes, filename: str, size_bytes: int, max_bytes: int
+) -> str:
     """Detect format from header bytes, enforce size limit, return format string."""
     if size_bytes > max_bytes:
         raise HTTPException(
@@ -105,7 +107,6 @@ async def measure_sync(
             from app.models.schemas import (
                 AreaValues,
                 BoundingBox,
-                Centroid,
                 FeatureMeasurement,
                 FileMeta,
                 MeasurementReport,
@@ -116,10 +117,15 @@ async def measure_sync(
 
             raster = measure_raster(tmp_path)
             from app.services.geodesic import bounding_box_dimensions
-            bbox_dims = bounding_box_dimensions((
-                raster.bounds_minx, raster.bounds_miny,
-                raster.bounds_maxx, raster.bounds_maxy,
-            ))
+
+            bbox_dims = bounding_box_dimensions(
+                (
+                    raster.bounds_minx,
+                    raster.bounds_miny,
+                    raster.bounds_maxx,
+                    raster.bounds_maxy,
+                )
+            )
             bbox = BoundingBox(**bbox_dims)
             area_vals = convert_area(raster.bbox_area_m2)
             area = AreaValues(**area_vals.as_dict())
@@ -183,7 +189,9 @@ async def measure_sync(
 
         # Save to history
         import json
+
         from app.models.db import HistoryEntry
+
         history = HistoryEntry(
             id=str(uuid.uuid4()),
             filename=file.filename or "unknown",
@@ -251,7 +259,6 @@ async def measure_async(
         do_repair=repair_geometry,
         include_properties=include_properties,
         simplify_tolerance=simplify_tolerance,
-        db_session=db,
     )
 
     return JobResponse(job_id=job_id, status="pending", progress=0)
@@ -267,10 +274,9 @@ async def measure_geometry(
     _api_key: str | None = Depends(verify_api_key),
 ) -> MeasurementReport:
     """Accept raw GeoJSON or WKT and return measurements without file upload."""
+
     import geopandas as gpd
-    import json
     from shapely import from_wkt
-    from shapely.geometry import shape
 
     warnings: list[str] = []
 

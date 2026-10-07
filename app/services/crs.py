@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import geopandas as gpd
-from pyproj import CRS, Transformer
+from pyproj import CRS
 from shapely.geometry import MultiPolygon, Polygon
 
 from app.core.logging import get_logger

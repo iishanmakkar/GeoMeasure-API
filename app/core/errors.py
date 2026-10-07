@@ -50,8 +50,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         details = [
-            {"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]}
-            for e in exc.errors()
+            {"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]} for e in exc.errors()
         ]
         return _error_response(
             "VALIDATION_ERROR",

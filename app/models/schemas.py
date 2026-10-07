@@ -6,7 +6,6 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ---------------------------------------------------------------------------
 # Measurement value models
 # ---------------------------------------------------------------------------
@@ -84,9 +83,7 @@ class PolygonExtras(BaseModel):
     convex_hull_area_m2: float = Field(description="Convex hull area in m²")
     compactness: float = Field(description="Polsby-Popper compactness score [0,1]")
     min_rotated_rect_width_m: float = Field(description="Width of minimum rotated rectangle in m")
-    min_rotated_rect_height_m: float = Field(
-        description="Height of minimum rotated rectangle in m"
-    )
+    min_rotated_rect_height_m: float = Field(description="Height of minimum rotated rectangle in m")
 
 
 class TrackExtras(BaseModel):
@@ -135,9 +132,7 @@ class FeatureMeasurement(BaseModel):
     length: LengthValues | None = Field(
         default=None, description="Length (lines) or None for points"
     )
-    perimeter: LengthValues | None = Field(
-        default=None, description="Perimeter (polygons only)"
-    )
+    perimeter: LengthValues | None = Field(default=None, description="Perimeter (polygons only)")
     centroid: Centroid | None = None
     bbox: BoundingBox | None = None
     representative_point: Centroid | None = None

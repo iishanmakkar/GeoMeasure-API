@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 import os
 import shutil
 import tempfile
@@ -13,10 +12,10 @@ from typing import Any
 import geopandas as gpd
 import gpxpy
 import pandas as pd
-from shapely.geometry import LineString, MultiLineString, Point
+from shapely.geometry import LineString, Point
 
 from app.core.logging import get_logger
-from app.utils.validators import sniff_format, validate_archive_safety
+from app.utils.validators import validate_archive_safety
 
 log = get_logger(__name__)
 
@@ -126,7 +125,7 @@ def _extract_kml_features(root: Any, warnings: list[str]) -> list[dict[str, Any]
 
 def _parse_kml_geometry(placemark: Any, warnings: list[str]) -> Any | None:
     """Parse geometry from a KML Placemark element."""
-    from shapely.geometry import MultiPoint, Polygon
+    from shapely.geometry import Polygon
 
     # Point
     pt_el = placemark.find(".//Point/coordinates")
@@ -159,12 +158,17 @@ def _parse_kml_geometry(placemark: Any, warnings: list[str]) -> Any | None:
     if mg_el is not None:
         geoms = []
         for child in mg_el:
-            child_pm = type("_", (), {"findall": mg_el.findall, "find": mg_el.find, "__iter__": lambda s: iter(mg_el)})()
+            child_pm = type(
+                "_",
+                (),
+                {"findall": mg_el.findall, "find": mg_el.find, "__iter__": lambda s: iter(mg_el)},
+            )()
             g = _parse_kml_geometry(child, warnings)
             if g:
                 geoms.append(g)
         if geoms:
             from shapely.ops import unary_union
+
             return unary_union(geoms)
 
     warnings.append("Placemark has no recognised geometry element")
@@ -173,7 +177,7 @@ def _parse_kml_geometry(placemark: Any, warnings: list[str]) -> Any | None:
 
 def _parse_kml_coords(text: str) -> list[tuple[float, ...]]:
     """Parse KML coordinate string into a list of (lon, lat) or (lon, lat, alt) tuples."""
-    result = []
+    result: list[tuple[float, ...]] = []
     for token in text.strip().split():
         parts = token.split(",")
         if len(parts) >= 2:
@@ -214,7 +218,7 @@ def _load_gpx(path: str) -> tuple[gpd.GeoDataFrame, dict, list[str]]:
     warnings: list[str] = []
     features: list[dict[str, Any]] = []
 
-    with open(path, "rb") as f:
+    with open(path, encoding="utf-8") as f:
         gpx = gpxpy.parse(f)
 
     # Tracks
@@ -247,7 +251,9 @@ def _load_gpx(path: str) -> tuple[gpd.GeoDataFrame, dict, list[str]]:
                     "geometry": LineString(coords),
                     "type": "route",
                     "name": route.name or f"Route {r_idx}",
-                    "_coords_with_elev": [(pt.longitude, pt.latitude, pt.elevation) for pt in route.points],
+                    "_coords_with_elev": [
+                        (pt.longitude, pt.latitude, pt.elevation) for pt in route.points
+                    ],
                     "_timestamps": [None] * len(route.points),
                 }
             )

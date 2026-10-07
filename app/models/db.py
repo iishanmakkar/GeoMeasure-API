@@ -6,8 +6,8 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, Integer, String, Text
-from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.config import get_settings
 
@@ -16,13 +16,11 @@ settings = get_settings()
 engine = create_async_engine(
     settings.database_url,
     echo=False,
-    future=True,
     connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
 )
 
-AsyncSessionLocal: sessionmaker[AsyncSession] = sessionmaker(  # type: ignore[assignment]
+AsyncSessionLocal = async_sessionmaker(
     bind=engine,
-    class_=AsyncSession,
     expire_on_commit=False,
 )
 

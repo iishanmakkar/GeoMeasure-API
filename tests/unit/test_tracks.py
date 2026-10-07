@@ -25,7 +25,9 @@ class TestTrackAnalysis:
         for i in range(n):
             elev = 200 + i * 10 if with_elevation else None
             ts = base_time + timedelta(hours=i) if with_timestamps else None
-            points.append(TrackPoint(lon=base_lon + i * 0.1, lat=28.0, elevation=elev, timestamp=ts))
+            points.append(
+                TrackPoint(lon=base_lon + i * 0.1, lat=28.0, elevation=elev, timestamp=ts)
+            )
         return points
 
     def test_basic_2d_length(self) -> None:

@@ -9,12 +9,9 @@ from typing import Any
 import geopandas as gpd
 from pyproj import CRS
 from shapely.geometry import (
-    GeometryCollection,
     LineString,
     MultiLineString,
-    MultiPoint,
     MultiPolygon,
-    Point,
     Polygon,
 )
 from shapely.geometry.base import BaseGeometry
@@ -30,7 +27,12 @@ from app.models.schemas import (
     PolygonExtras,
     Summary,
 )
-from app.services.crs import detect_crs, detect_swapped_coordinates, get_projected_crs, reproject_to_wgs84
+from app.services.crs import (
+    detect_crs,
+    detect_swapped_coordinates,
+    get_projected_crs,
+    reproject_to_wgs84,
+)
 from app.services.geodesic import (
     bounding_box_dimensions,
     compute_centroid,
@@ -62,17 +64,11 @@ def _polygon_extras(geom: Polygon | MultiPolygon) -> dict[str, Any]:
     # Holes
     if isinstance(geom, Polygon):
         holes = list(geom.interiors)
-        hole_area_m2 = sum(
-            geodesic_area(Polygon(h)) for h in holes
-        )
+        hole_area_m2 = sum(geodesic_area(Polygon(h)) for h in holes)
         num_holes = len(holes)
     else:
         num_holes = sum(len(list(p.interiors)) for p in geom.geoms)
-        hole_area_m2 = sum(
-            geodesic_area(Polygon(h))
-            for p in geom.geoms
-            for h in p.interiors
-        )
+        hole_area_m2 = sum(geodesic_area(Polygon(h)) for p in geom.geoms for h in p.interiors)
 
     # Convex hull
     hull = geom.convex_hull
@@ -174,7 +170,6 @@ def measure_feature(
         perimeter = _length_values(geodesic_length(geom))
 
     # Polygon extras
-    from app.models.schemas import PolygonExtras
     extras = None
     if isinstance(geom, _POLYGON_TYPES):
         ex = _polygon_extras(geom)
@@ -257,6 +252,7 @@ def measure_geodataframe(
     invalid_count = 0
 
     from app.config import get_settings
+
     max_features = get_settings().max_features
 
     if len(gdf) > max_features:
@@ -268,7 +264,8 @@ def measure_geodataframe(
     for idx, row in gdf.iterrows():
         geom = row.geometry
         props = {
-            k: v for k, v in row.items()
+            k: v
+            for k, v in row.items()
             if k != "geometry" and not (hasattr(v, "__class__") and v.__class__.__name__ == "NaT")
         }
         # Convert non-serialisable types
@@ -276,6 +273,7 @@ def measure_geodataframe(
         for k, v in props.items():
             try:
                 import json
+
                 json.dumps(v)
                 cleaned_props[k] = v
             except (TypeError, ValueError):
@@ -310,7 +308,9 @@ def measure_geodataframe(
 
     # Summary centroid
     union_geom = gdf.union_all() if hasattr(gdf, "union_all") else gdf.geometry.unary_union
-    summary_centroid = Centroid(**compute_centroid(union_geom)) if union_geom and not union_geom.is_empty else None
+    summary_centroid = (
+        Centroid(**compute_centroid(union_geom)) if union_geom and not union_geom.is_empty else None
+    )
 
     summary = Summary(
         total_area=_area_values(total_area_m2) if total_area_m2 > 0 else None,
