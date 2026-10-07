@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "polygon-1",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.0, 28.0], [78.0, 28.0], [78.0, 29.0], [77.0, 29.0], [77.0, 28.0]]]
+      },
+      "properties": {
+        "name": "Test Polygon",
+        "area_label": "1 deg box"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "line-1",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[72.0, 19.0], [73.0, 20.0], [74.0, 21.0]]
+      },
+      "properties": {
+        "name": "Test Line",
+        "description": "A simple 3-point line"
+      }
+    }
+  ]
+}

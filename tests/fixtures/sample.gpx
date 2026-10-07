@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="GeoMeasure Test" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Test GPX Track</name>
+  </metadata>
+  <trk>
+    <name>Delhi to Jaipur</name>
+    <trkseg>
+      <trkpt lat="28.6139" lon="77.2090">
+        <ele>216</ele>
+        <time>2024-01-01T06:00:00Z</time>
+      </trkpt>
+      <trkpt lat="28.4000" lon="76.8000">
+        <ele>250</ele>
+        <time>2024-01-01T07:00:00Z</time>
+      </trkpt>
+      <trkpt lat="28.1000" lon="76.3000">
+        <ele>300</ele>
+        <time>2024-01-01T08:00:00Z</time>
+      </trkpt>
+      <trkpt lat="27.8000" lon="75.9000">
+        <ele>280</ele>
+        <time>2024-01-01T09:00:00Z</time>
+      </trkpt>
+      <trkpt lat="27.5000" lon="75.5000">
+        <ele>320</ele>
+        <time>2024-01-01T10:00:00Z</time>
+      </trkpt>
+      <trkpt lat="27.2000" lon="75.2000">
+        <ele>310</ele>
+        <time>2024-01-01T11:00:00Z</time>
+      </trkpt>
+      <trkpt lat="27.0000" lon="75.0000">
+        <ele>290</ele>
+        <time>2024-01-01T12:00:00Z</time>
+      </trkpt>
+      <trkpt lat="26.9124" lon="75.7873">
+        <ele>430</ele>
+        <time>2024-01-01T13:00:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+  <wpt lat="28.6139" lon="77.2090">
+    <name>Delhi Start</name>
+    <ele>216</ele>
+  </wpt>
+</gpx>

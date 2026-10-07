@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./geomeasure.db:/app/geomeasure.db
+      - /tmp/geomeasure:/tmp/geomeasure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # Optional: run tests in a separate container
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./test.db
+      - API_KEYS=
+    command: >
+      sh -c "pip install -e '.[dev]' &&
+             python tests/fixtures/generate_fixtures.py &&
+             pytest tests/ -v --cov=app --cov-report=term-missing"
+    profiles:
+      - test

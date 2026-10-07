@@ -1,0 +1,88 @@
+name: GeoMeasure API CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install dev dependencies
+        run: pip install ruff mypy types-lxml
+      - name: Ruff lint
+        run: ruff check app/ tests/
+      - name: Ruff format check
+        run: ruff format --check app/ tests/
+      - name: Mypy type check
+        run: mypy app/ --ignore-missing-imports
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system GDAL dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgdal-dev gdal-bin libgeos-dev libproj-dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install package + dev extras
+        run: pip install -e ".[dev]"
+
+      - name: Generate test fixtures
+        run: python tests/fixtures/generate_fixtures.py
+
+      - name: Run tests with coverage
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./test_ci.db
+          API_KEYS: ""
+        run: |
+          pytest tests/ -v \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=70 \
+            -x
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t geomeasure:ci .
+      - name: Test container health
+        run: |
+          docker run -d -p 8000:8000 --name geomeasure_test \
+            -e API_KEYS="" \
+            -e DATABASE_URL="sqlite+aiosqlite:///./ci.db" \
+            geomeasure:ci
+          sleep 15
+          curl -f http://localhost:8000/health
+          docker stop geomeasure_test

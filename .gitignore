@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+*.pyo
+.Python
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.log
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docker
+*.dockerignore
+
+# Temp files
+tmp/
+temp/
+/tmp/
+
+# Ruff / mypy cache
+.ruff_cache/
+.mypy_cache/
+
+# Large fixtures (generated locally)
+tests/fixtures/sample_shp.zip
+tests/fixtures/sample.gpkg
+tests/fixtures/sample.tif
+tests/fixtures/sample.kmz
