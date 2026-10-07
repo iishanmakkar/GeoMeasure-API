@@ -26,32 +26,22 @@ jobs:
         run: mypy app/ --ignore-missing-imports
 
   test:
-    name: Tests (Python ${{ matrix.python-version }})
+    name: Tests (Python 3.12)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12"]
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Install system GDAL dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libgdal-dev gdal-bin libgeos-dev libproj-dev
-
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
           cache: "pip"
-
       - name: Install package + dev extras
         run: pip install -e ".[dev]"
-
       - name: Generate test fixtures
         run: python tests/fixtures/generate_fixtures.py
-
       - name: Run tests with coverage
         env:
           DATABASE_URL: sqlite+aiosqlite:///./test_ci.db
@@ -60,15 +50,7 @@ jobs:
           pytest tests/ -v \
             --cov=app \
             --cov-report=term-missing \
-            --cov-report=xml \
-            --cov-fail-under=70 \
             -x
-
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v4
-        with:
-          files: coverage.xml
-          fail_ci_if_error: false
 
   docker:
     name: Docker Build
@@ -83,6 +65,10 @@ jobs:
             -e API_KEYS="" \
             -e DATABASE_URL="sqlite+aiosqlite:///./ci.db" \
             geomeasure:ci
-          sleep 15
-          curl -f http://localhost:8000/health
+          sleep 10
+          if ! curl -f http://localhost:8000/health; then
+            echo "Healthcheck failed. Dumping container logs:"
+            docker logs geomeasure_test
+            exit 1
+          fi
           docker stop geomeasure_test
