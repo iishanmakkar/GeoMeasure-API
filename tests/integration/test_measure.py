@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,7 +16,7 @@ FIXTURES = Path(__file__).parent.parent / "fixtures"
 class TestMeasureEndpoint:
     """Integration tests for synchronous measurement endpoint."""
 
-    def _upload(self, client: TestClient, filename: str, **form) -> dict:
+    def _upload(self, client: TestClient, filename: str, **form) -> dict[str, Any]:
         path = fixture_path(filename)
         with open(path, "rb") as f:
             resp = client.post(
@@ -24,7 +25,8 @@ class TestMeasureEndpoint:
                 data=form,
             )
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
-        return resp.json()
+        from typing import Any
+        return cast(dict[str, Any], resp.json())
 
     def test_measure_geojson(self, client: TestClient) -> None:
         report = self._upload(client, "sample.geojson")

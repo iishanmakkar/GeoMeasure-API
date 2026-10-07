@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import contextlib
+import os
 import tempfile
 import time
 import uuid
@@ -39,7 +39,7 @@ settings = get_settings()
 
 def _save_upload(upload: UploadFile) -> tuple[str, int, bytes]:
     """Save UploadFile to a secure temp file. Returns (path, size, header)."""
-    tmp = tempfile.NamedTemporaryFile(
+    tmp = tempfile.NamedTemporaryFile(  # noqa: SIM115
         delete=False, suffix=os.path.splitext(upload.filename or "")[-1]
     )
     try:

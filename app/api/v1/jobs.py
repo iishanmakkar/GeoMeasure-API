@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,10 +32,8 @@ async def get_job(
 
     result: MeasurementReport | None = None
     if job.status == "done" and job.result_json:
-        try:
+        with contextlib.suppress(Exception):
             result = MeasurementReport.model_validate_json(job.result_json)
-        except Exception:
-            pass
 
     return JobResponse(
         job_id=job.id,

@@ -74,7 +74,7 @@ def _load_geojson(path: str) -> tuple[gpd.GeoDataFrame, dict, list[str]]:
 
 def _load_kml(path: str) -> tuple[gpd.GeoDataFrame, dict, list[str]]:
     """Load a KML file using lxml + defusedxml for safe XML parsing."""
-    import defusedxml.ElementTree as ET
+    import defusedxml.ElementTree as ET  # noqa: N817
 
     warnings: list[str] = []
 
@@ -85,7 +85,6 @@ def _load_kml(path: str) -> tuple[gpd.GeoDataFrame, dict, list[str]]:
         raise ValueError(f"Failed to parse KML: {exc}") from exc
 
     # Strip namespaces for easier XPath
-    ns_map: dict[str, str] = {}
     _strip_ns(root)
 
     features = _extract_kml_features(root, warnings)
@@ -158,7 +157,7 @@ def _parse_kml_geometry(placemark: Any, warnings: list[str]) -> Any | None:
     if mg_el is not None:
         geoms = []
         for child in mg_el:
-            child_pm = type(
+            type(
                 "_",
                 (),
                 {"findall": mg_el.findall, "find": mg_el.find, "__iter__": lambda s: iter(mg_el)},
@@ -286,7 +285,7 @@ def _load_shapefile_zip(path: str) -> tuple[gpd.GeoDataFrame, dict, list[str]]:
             # Security: only extract safe extensions
             for member in zf.infolist():
                 norm = os.path.normpath(member.filename)
-                ext = os.path.splitext(norm)[1].lower()
+                os.path.splitext(norm)[1].lower()
                 if not norm.startswith("..") and not os.path.isabs(member.filename):
                     zf.extract(member, tmp_dir)
 

@@ -82,7 +82,7 @@ def projected_area(polygon: Polygon, epsg: int) -> float:
         xs = [c[0] for c in coords]
         ys = [c[1] for c in coords]
         px, py = transformer.transform(xs, ys)
-        return list(zip(px, py))
+        return list(zip(px, py, strict=False))
 
     proj_exterior = _project_ring(polygon.exterior)
     proj_interiors = [_project_ring(i) for i in polygon.interiors]

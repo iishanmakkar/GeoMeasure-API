@@ -6,6 +6,7 @@ import logging
 import time
 import uuid
 from collections.abc import Callable
+from typing import cast
 
 import structlog
 from fastapi import Request, Response
@@ -40,9 +41,6 @@ def configure_logging() -> None:
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-
-
-from typing import cast
 
 
 def get_logger(name: str = __name__) -> structlog.BoundLogger:

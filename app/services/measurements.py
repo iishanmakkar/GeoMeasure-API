@@ -113,7 +113,6 @@ def measure_feature(
     include_properties: bool,
 ) -> FeatureMeasurement:
     """Measure a single geometry and return a FeatureMeasurement."""
-    warnings: list[str] = []
 
     if geom is None or geom.is_empty:
         return FeatureMeasurement(

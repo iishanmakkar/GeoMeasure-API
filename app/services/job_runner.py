@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
-from datetime import UTC, datetime
-
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.models.db import HistoryEntry, Job
@@ -33,6 +31,7 @@ async def run_measurement_job(
     Updates the Job record in the database with progress and results.
     """
     import os
+
     from app.models.db import AsyncSessionLocal
 
     log.info("job_started", job_id=job_id, format=detected_format)
@@ -60,7 +59,6 @@ async def run_measurement_job(
                 # Build a minimal report for rasters
                 from app.models.schemas import (
                     BoundingBox,
-                    Centroid,
                     FeatureMeasurement,
                     FileMeta,
                     MeasurementReport,
@@ -169,7 +167,5 @@ async def run_measurement_job(
                 await db_session.commit()
         finally:
             # Clean up temp file
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(file_path)
-            except OSError:
-                pass
