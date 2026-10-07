@@ -26,6 +26,7 @@ class TestMeasureEndpoint:
             )
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
         from typing import Any
+
         return cast(dict[str, Any], resp.json())
 
     def test_measure_geojson(self, client: TestClient) -> None:

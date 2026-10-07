@@ -16,15 +16,18 @@ from app.main import app
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
+
 @pytest.fixture(scope="session")
 def client() -> Generator[TestClient, None, None]:
     with TestClient(app, raise_server_exceptions=True) as c:
         yield c
 
+
 @pytest_asyncio.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
+
 
 def fixture_path(name: str) -> Path:
     return FIXTURES_DIR / name
