@@ -28,7 +28,11 @@ dependencies = [
   "structlog>=24.1",
   "numpy>=1.26",
   "pandas>=2.1",
+  "mcp>=1.0.0",
 ]
+
+[project.scripts]
+geomeasure-mcp = "app.mcp_server:main"
 
 [project.optional-dependencies]
 dev = [

@@ -5,7 +5,8 @@
   [![GeoMeasure API CI](https://github.com/iishanmakkar/GeoMeasure-API/actions/workflows/ci.yml/badge.svg)](https://github.com/iishanmakkar/GeoMeasure-API/actions/workflows/ci.yml)
   [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB.svg?logo=python&logoColor=white)](https://python.org)
   [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-  [![Coverage](https://img.shields.io/badge/Coverage-91%25-brightgreen.svg)]()
+  [![MCP Server](https://img.shields.io/badge/MCP-Server%20Ready-blueviolet.svg?logo=anthropic&logoColor=white)](docs/mcp.md)
+  [![Coverage](https://img.shields.io/badge/Coverage-90%25-brightgreen.svg)]()
   [![OpenAPI](https://img.shields.io/badge/OpenAPI-3.1-6BA539.svg?logo=openapi-initiative&logoColor=white)](docs/openapi.json)
   [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
   [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](Dockerfile)
@@ -325,9 +326,46 @@ print(f"Total Area: {resp.json()['summary']['total_area']['km2']:.2f} km²")
 
 ---
 
+## 🤖 Model Context Protocol (MCP) Server
+
+GeoMeasure includes an official, production-grade **MCP Server** (`mcp>=1.0.0`) so that AI assistants (**Claude Desktop, Cursor, Antigravity, Windsurf**) can execute geospatial calculations natively:
+
+```bash
+# Start MCP server over stdio
+python -m app.mcp_server
+# or
+geomeasure-mcp
+```
+
+### Connect to Claude Desktop (`claude_desktop_config.json`)
+```json
+{
+  "mcpServers": {
+    "geomeasure": {
+      "command": "python",
+      "args": ["-m", "app.mcp_server"],
+      "cwd": "/absolute/path/to/GeoMeasure-API"
+    }
+  }
+}
+```
+
+### Available MCP Tools
+- `calculate_distance`: Great-Circle WGS84 distance & initial/final azimuths.
+- `measure_wkt`: Survey-grade area, perimeter, and bounding boxes for WKT strings.
+- `measure_geojson`: Real-world measurements for GeoJSON geometries/features.
+- `measure_file`: Load and measure `.geojson`, `.kml`, `.kmz`, `.gpx`, `.zip` (shapefiles), `.gpkg`, `.csv`, `.tif`.
+- `repair_geometry`: Self-repair self-crossing or corrupt geometries via Shapely 2.0 `make_valid`.
+- `analyze_gpx_track`: Extract 3D slant distances, elevation ascent/descent, and pace from GPS routes.
+- `list_supported_formats`: Enumerate supported GIS formats.
+
+👉 *See [`docs/mcp.md`](docs/mcp.md) for complete Cursor, Windsurf, and Claude integration setup.*
+
+---
+
 ## 🧪 Testing & Quality Assurance
 
-GeoMeasure maintains an exhaustive **83-test test suite** with **91% line coverage**:
+GeoMeasure maintains an exhaustive **91-test test suite** with **90% line coverage**:
 
 ```bash
 # Run full test suite with coverage report
