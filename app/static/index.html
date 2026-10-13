@@ -154,10 +154,11 @@
       <!-- Basemap Switcher -->
       <div class="relative">
         <select id="basemap-select" onchange="switchBasemap(this.value)" class="bg-slate-800/80 border border-slate-700/60 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50 cursor-pointer">
-          <option value="dark">Carto Dark Matter</option>
-          <option value="voyager">Carto Voyager</option>
-          <option value="satellite">Esri World Imagery</option>
-          <option value="light">Carto Positron</option>
+          <option value="dark" selected>Dark Canvas (Clean / Free)</option>
+          <option value="satellite">Esri World Imagery (Satellite)</option>
+          <option value="carto-dark">CARTO Dark Matter</option>
+          <option value="carto-voyager">CARTO Voyager</option>
+          <option value="carto-light">CARTO Positron</option>
           <option value="osm">OpenStreetMap</option>
         </select>
       </div>
@@ -721,7 +722,7 @@
         </div>
         <button onclick="closeCartoModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
       </div>
-      <p class="text-xs text-slate-400">Configure your CARTO API Access Token / Key to unlock high-rate vector and raster basemaps (Dark Matter, Voyager, Positron).</p>
+      <p class="text-xs text-slate-400">CARTO raster basemaps require a free Basemap Key from <a href="https://carto.com/basemaps/apikey" target="_blank" class="text-emerald-400 underline font-semibold">carto.com/basemaps/apikey</a>. Or choose <strong class="text-slate-200">Dark Canvas (Clean / Free)</strong> or <strong class="text-slate-200">Satellite</strong> in the basemap dropdown for instant watermark-free maps.</p>
       
       <div class="space-y-1.5">
         <label class="text-[11px] font-semibold text-slate-300">CARTO API Key / Access Token</label>
@@ -794,8 +795,8 @@
     }
 
     function getCartoTileUrl(style) {
-      const keyParam = cartoApiKey ? `?api_key=${encodeURIComponent(cartoApiKey)}` : '';
-      return `https://{s}.basemaps.cartocdn.com/${style}/{z}/{x}/{y}{r}.png${keyParam}`;
+      const keyParam = cartoApiKey ? `?key=${encodeURIComponent(cartoApiKey)}&api_key=${encodeURIComponent(cartoApiKey)}` : '';
+      return `https://{s}.basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}.png${keyParam}`;
     }
 
     function updateCartoUI() {
@@ -856,16 +857,43 @@
 
     function updateBasemapLayers() {
       const currentBasemap = document.getElementById('basemap-select').value;
-      const wasAdded = basemapLayers[currentBasemap] && map.hasLayer(basemapLayers[currentBasemap]);
       
       Object.values(basemapLayers).forEach(l => map.removeLayer(l));
 
       basemapLayers = {
-        dark: L.tileLayer(getCartoTileUrl('dark_all'), { maxZoom: 19, attribution: '© CARTO, © OpenStreetMap' }),
-        voyager: L.tileLayer(getCartoTileUrl('rastertiles/voyager'), { maxZoom: 19, attribution: '© CARTO, © OpenStreetMap' }),
-        light: L.tileLayer(getCartoTileUrl('light_all'), { maxZoom: 19, attribution: '© CARTO, © OpenStreetMap' }),
-        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
-        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })
+        dark: L.layerGroup([
+          L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 16,
+            attribution: 'Esri, HERE, Garmin, © OpenStreetMap'
+          }),
+          L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 16,
+            pane: 'overlayPane'
+          })
+        ]),
+        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          maxZoom: 19,
+          attribution: 'Esri, Maxar, Earthstar Geographics'
+        }),
+        'carto-dark': L.tileLayer(getCartoTileUrl('dark_all'), {
+          maxZoom: 19,
+          subdomains: 'abcd',
+          attribution: '© CARTO, © OpenStreetMap'
+        }),
+        'carto-voyager': L.tileLayer(getCartoTileUrl('voyager'), {
+          maxZoom: 19,
+          subdomains: 'abcd',
+          attribution: '© CARTO, © OpenStreetMap'
+        }),
+        'carto-light': L.tileLayer(getCartoTileUrl('light_all'), {
+          maxZoom: 19,
+          subdomains: 'abcd',
+          attribution: '© CARTO, © OpenStreetMap'
+        }),
+        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+        })
       };
 
       if (basemapLayers[currentBasemap]) {

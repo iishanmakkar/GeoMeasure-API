@@ -65,7 +65,13 @@ jobs:
             -e API_KEYS="" \
             -e DATABASE_URL="sqlite+aiosqlite:///./ci.db" \
             geomeasure:ci
-          sleep 10
+          for i in $(seq 1 30); do
+            if curl -s -f http://localhost:8000/health > /dev/null 2>&1; then
+              echo "Container became healthy after ${i}s"
+              break
+            fi
+            sleep 1
+          done
           if ! curl -f http://localhost:8000/health; then
             echo "Healthcheck failed. Dumping container logs:"
             docker logs geomeasure_test
