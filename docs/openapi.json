@@ -1,0 +1,1776 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GeoMeasure API",
+    "description": "Production-quality REST API for geospatial measurements.\n\n## Features\n* **Geodesic accuracy**: Powered by `pyproj.Geod` over the WGS84 ellipsoid.\n* **Multi-format support**: GeoJSON, KML, KMZ, GPX, Shapefile, GeoPackage, CSV, and GeoTIFF.\n* **Async jobs**: Process gigabyte-scale files safely in the background.\n* **Security**: XXE protection, zip-bomb prevention, and path traversal guards built-in.\n",
+    "contact": {
+      "name": "Ishan Makkar",
+      "url": "https://github.com/iishanmakkar/GeoMeasure-API",
+      "email": "ishanmakkar651@gmail.com"
+    },
+    "license": {
+      "name": "MIT License",
+      "identifier": "MIT"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Meta"
+        ],
+        "summary": "Health check",
+        "description": "Return the service health status and current timestamp.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Service health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Check Health Get"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "tags": [
+          "Meta"
+        ],
+        "summary": "API version",
+        "description": "Return the current API version and metadata.",
+        "operationId": "get_version_version_get",
+        "responses": {
+          "200": {
+            "description": "API version information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Version Version Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/formats": {
+      "get": {
+        "tags": [
+          "Meta",
+          "Meta"
+        ],
+        "summary": "Supported formats",
+        "description": "List all supported geospatial file formats and their constraints.",
+        "operationId": "get_formats_api_v1_formats_get",
+        "responses": {
+          "200": {
+            "description": "List of supported input formats and their limits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Formats Api V1 Formats Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/measure": {
+      "post": {
+        "tags": [
+          "Measurements"
+        ],
+        "summary": "Measure a geospatial file (synchronous)",
+        "description": "Upload a geospatial file and receive measurements synchronously.\n\nFiles up to MAX_SYNC_SIZE_MB (default 50 MB) are processed inline.\nFor larger files use POST /measure/async.",
+        "operationId": "measure_sync_api_v1_measure_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_measure_sync_api_v1_measure_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Full measurement report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasurementReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/measure/async": {
+      "post": {
+        "tags": [
+          "Measurements"
+        ],
+        "summary": "Measure a geospatial file (asynchronous)",
+        "description": "Upload a geospatial file for async processing. Returns a job_id to poll.",
+        "operationId": "measure_async_api_v1_measure_async_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_measure_async_api_v1_measure_async_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/measure/geometry": {
+      "post": {
+        "tags": [
+          "Measurements"
+        ],
+        "summary": "Measure inline GeoJSON or WKT geometry",
+        "description": "Accept raw GeoJSON or WKT and return measurements without file upload.",
+        "operationId": "measure_geometry_api_v1_measure_geometry_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeometryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasurementReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get async job status",
+        "description": "Return the status and result of an async measurement job.",
+        "operationId": "get_job_api_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/distance": {
+      "post": {
+        "tags": [
+          "Distance"
+        ],
+        "summary": "Geodesic distance between two points",
+        "description": "Compute the geodesic distance and bearing between two WGS84 points.\n\nBody fields:\n- **from**: [lon, lat] of the first point\n- **to**: [lon, lat] of the second point",
+        "operationId": "compute_distance_api_v1_distance_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistanceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistanceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history": {
+      "get": {
+        "tags": [
+          "History"
+        ],
+        "summary": "List past measurements",
+        "description": "Return a paginated list of past measurement requests.",
+        "operationId": "list_history_api_v1_history_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history/{entry_id}": {
+      "get": {
+        "tags": [
+          "History"
+        ],
+        "summary": "Get full measurement report from history",
+        "description": "Return the full measurement report for a past request.",
+        "operationId": "get_history_entry_api_v1_history__entry_id__get",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entry Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasurementReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "History"
+        ],
+        "summary": "Delete a history entry",
+        "description": "Delete a past measurement record.",
+        "operationId": "delete_history_entry_api_v1_history__entry_id__delete",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entry Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report/{entry_id}.csv": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Export measurement report as CSV",
+        "description": "Download per-feature measurements as a CSV file.",
+        "operationId": "export_csv_api_v1_report__entry_id__csv_get",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entry Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report/{entry_id}.geojson": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Export measurement report as GeoJSON",
+        "description": "Download per-feature measurements as a GeoJSON FeatureCollection.",
+        "operationId": "export_geojson_api_v1_report__entry_id__geojson_get",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entry Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/geo+json": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AreaValues": {
+        "properties": {
+          "m2": {
+            "type": "number",
+            "title": "M2",
+            "description": "Square metres"
+          },
+          "km2": {
+            "type": "number",
+            "title": "Km2",
+            "description": "Square kilometres"
+          },
+          "ha": {
+            "type": "number",
+            "title": "Ha",
+            "description": "Hectares"
+          },
+          "acres": {
+            "type": "number",
+            "title": "Acres",
+            "description": "Acres"
+          },
+          "ft2": {
+            "type": "number",
+            "title": "Ft2",
+            "description": "Square feet"
+          },
+          "mi2": {
+            "type": "number",
+            "title": "Mi2",
+            "description": "Square miles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "m2",
+          "km2",
+          "ha",
+          "acres",
+          "ft2",
+          "mi2"
+        ],
+        "title": "AreaValues",
+        "description": "Area measurements in all supported units.",
+        "example": {
+          "acres": 304165.5,
+          "ft2": 13249305600.0,
+          "ha": 123080.0,
+          "km2": 1230.8,
+          "m2": 1230800000.0,
+          "mi2": 475.2
+        }
+      },
+      "Body_measure_async_api_v1_measure_async_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "default": "geodesic"
+          },
+          "units": {
+            "type": "string",
+            "title": "Units",
+            "default": "metric"
+          },
+          "source_crs": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Crs"
+          },
+          "repair_geometry": {
+            "type": "boolean",
+            "title": "Repair Geometry",
+            "default": false
+          },
+          "include_properties": {
+            "type": "boolean",
+            "title": "Include Properties",
+            "default": true
+          },
+          "simplify_tolerance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simplify Tolerance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_measure_async_api_v1_measure_async_post"
+      },
+      "Body_measure_sync_api_v1_measure_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "Geospatial file to measure"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "default": "geodesic"
+          },
+          "units": {
+            "type": "string",
+            "title": "Units",
+            "default": "metric"
+          },
+          "source_crs": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Crs"
+          },
+          "repair_geometry": {
+            "type": "boolean",
+            "title": "Repair Geometry",
+            "default": false
+          },
+          "include_properties": {
+            "type": "boolean",
+            "title": "Include Properties",
+            "default": true
+          },
+          "simplify_tolerance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simplify Tolerance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_measure_sync_api_v1_measure_post"
+      },
+      "BoundingBox": {
+        "properties": {
+          "minx": {
+            "type": "number",
+            "title": "Minx",
+            "description": "Minimum longitude (west)"
+          },
+          "miny": {
+            "type": "number",
+            "title": "Miny",
+            "description": "Minimum latitude (south)"
+          },
+          "maxx": {
+            "type": "number",
+            "title": "Maxx",
+            "description": "Maximum longitude (east)"
+          },
+          "maxy": {
+            "type": "number",
+            "title": "Maxy",
+            "description": "Maximum latitude (north)"
+          },
+          "width_m": {
+            "type": "number",
+            "title": "Width M",
+            "description": "Width of bounding box in metres"
+          },
+          "height_m": {
+            "type": "number",
+            "title": "Height M",
+            "description": "Height of bounding box in metres"
+          }
+        },
+        "type": "object",
+        "required": [
+          "minx",
+          "miny",
+          "maxx",
+          "maxy",
+          "width_m",
+          "height_m"
+        ],
+        "title": "BoundingBox",
+        "description": "Bounding box with WGS84 coordinates and geodesic dimensions."
+      },
+      "Centroid": {
+        "properties": {
+          "lon": {
+            "type": "number",
+            "title": "Lon"
+          },
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lon",
+          "lat"
+        ],
+        "title": "Centroid",
+        "description": "Centroid coordinates."
+      },
+      "DistanceRequest": {
+        "properties": {
+          "from": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "From",
+            "description": "[lon, lat] in WGS84"
+          },
+          "to": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "To",
+            "description": "[lon, lat] in WGS84"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from",
+          "to"
+        ],
+        "title": "DistanceRequest",
+        "description": "Request body for POST /distance."
+      },
+      "DistanceResponse": {
+        "properties": {
+          "distance_m": {
+            "type": "number",
+            "title": "Distance M"
+          },
+          "distance_km": {
+            "type": "number",
+            "title": "Distance Km"
+          },
+          "distance_mi": {
+            "type": "number",
+            "title": "Distance Mi"
+          },
+          "distance_nmi": {
+            "type": "number",
+            "title": "Distance Nmi"
+          },
+          "initial_bearing_deg": {
+            "type": "number",
+            "title": "Initial Bearing Deg"
+          },
+          "final_bearing_deg": {
+            "type": "number",
+            "title": "Final Bearing Deg"
+          },
+          "from_point": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "From Point",
+            "description": "[lon, lat]"
+          },
+          "to_point": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "To Point",
+            "description": "[lon, lat]"
+          }
+        },
+        "type": "object",
+        "required": [
+          "distance_m",
+          "distance_km",
+          "distance_mi",
+          "distance_nmi",
+          "initial_bearing_deg",
+          "final_bearing_deg",
+          "from_point",
+          "to_point"
+        ],
+        "title": "DistanceResponse",
+        "description": "Result of a point-to-point geodesic distance calculation."
+      },
+      "FeatureMeasurement": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index",
+            "description": "Zero-based feature index in the file"
+          },
+          "id": {
+            "title": "Id",
+            "description": "Feature ID from the source file"
+          },
+          "geometry_type": {
+            "type": "string",
+            "title": "Geometry Type"
+          },
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "validity_reason": {
+            "type": "string",
+            "title": "Validity Reason"
+          },
+          "vertex_count": {
+            "type": "integer",
+            "title": "Vertex Count"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AreaValues"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Area (polygons only)"
+          },
+          "length": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LengthValues"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Length (lines) or None for points"
+          },
+          "perimeter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LengthValues"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Perimeter (polygons only)"
+          },
+          "centroid": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Centroid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bbox": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoundingBox"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "representative_point": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Centroid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "extras": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PolygonExtras"
+              },
+              {
+                "$ref": "#/components/schemas/TrackExtras"
+              },
+              {
+                "$ref": "#/components/schemas/RasterExtras"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extras"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Properties",
+            "description": "Original feature properties from the file"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "geometry_type",
+          "valid",
+          "validity_reason",
+          "vertex_count"
+        ],
+        "title": "FeatureMeasurement",
+        "description": "Measurements for a single geospatial feature."
+      },
+      "FileMeta": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "crs": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crs",
+            "description": "Detected CRS identifier"
+          },
+          "crs_assumed": {
+            "type": "boolean",
+            "title": "Crs Assumed",
+            "description": "True if CRS was not present in file and EPSG:4326 was assumed",
+            "default": false
+          },
+          "feature_count": {
+            "type": "integer",
+            "title": "Feature Count"
+          },
+          "processing_ms": {
+            "type": "number",
+            "title": "Processing Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "format",
+          "size_bytes",
+          "feature_count",
+          "processing_ms"
+        ],
+        "title": "FileMeta",
+        "description": "Metadata about the uploaded file."
+      },
+      "GeometryRequest": {
+        "properties": {
+          "geojson": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geojson",
+            "description": "Raw GeoJSON object (Feature or FeatureCollection)"
+          },
+          "wkt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wkt",
+            "description": "Well-Known Text geometry string"
+          },
+          "method": {
+            "type": "string",
+            "pattern": "^(geodesic|projected)$",
+            "title": "Method",
+            "default": "geodesic"
+          },
+          "units": {
+            "type": "string",
+            "pattern": "^(metric|imperial|both)$",
+            "title": "Units",
+            "default": "metric"
+          },
+          "source_crs": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Crs"
+          },
+          "repair_geometry": {
+            "type": "boolean",
+            "title": "Repair Geometry",
+            "default": false
+          },
+          "include_properties": {
+            "type": "boolean",
+            "title": "Include Properties",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "GeometryRequest",
+        "description": "Request body for POST /measure/geometry."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HistoryItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "feature_count": {
+            "type": "integer",
+            "title": "Feature Count"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "filename",
+          "format",
+          "feature_count",
+          "created_at"
+        ],
+        "title": "HistoryItem",
+        "description": "Summary item for the history list."
+      },
+      "HistoryList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "HistoryList",
+        "description": "Paginated list of past measurements."
+      },
+      "JobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "pending | running | done | failed"
+          },
+          "progress": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Progress",
+            "default": 0
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeasurementReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "title": "JobResponse",
+        "description": "Response for async job creation or status queries."
+      },
+      "LengthValues": {
+        "properties": {
+          "m": {
+            "type": "number",
+            "title": "M",
+            "description": "Metres"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km",
+            "description": "Kilometres"
+          },
+          "ft": {
+            "type": "number",
+            "title": "Ft",
+            "description": "Feet"
+          },
+          "mi": {
+            "type": "number",
+            "title": "Mi",
+            "description": "Miles"
+          },
+          "nmi": {
+            "type": "number",
+            "title": "Nmi",
+            "description": "Nautical miles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "m",
+          "km",
+          "ft",
+          "mi",
+          "nmi"
+        ],
+        "title": "LengthValues",
+        "description": "Length measurements in all supported units.",
+        "example": {
+          "ft": 3772966.0,
+          "km": 1150.0,
+          "m": 1150000.0,
+          "mi": 714.6,
+          "nmi": 620.7
+        }
+      },
+      "MeasurementReport": {
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/FileMeta"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/Summary"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureMeasurement"
+            },
+            "type": "array",
+            "title": "Features"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "default": "geodesic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "summary",
+          "features"
+        ],
+        "title": "MeasurementReport",
+        "description": "Full measurement report returned by POST /measure.",
+        "example": {
+          "features": [],
+          "file": {
+            "crs": "EPSG:4326",
+            "crs_assumed": false,
+            "feature_count": 2,
+            "format": "geojson",
+            "name": "sample.geojson",
+            "processing_ms": 42.1,
+            "size_bytes": 2048
+          },
+          "method": "geodesic",
+          "summary": {
+            "total_area": {
+              "km2": 1230.8
+            }
+          },
+          "warnings": []
+        }
+      },
+      "PolygonExtras": {
+        "properties": {
+          "num_holes": {
+            "type": "integer",
+            "title": "Num Holes",
+            "description": "Number of interior holes"
+          },
+          "hole_area_m2": {
+            "type": "number",
+            "title": "Hole Area M2",
+            "description": "Total area of holes in m\u00b2"
+          },
+          "convex_hull_area_m2": {
+            "type": "number",
+            "title": "Convex Hull Area M2",
+            "description": "Convex hull area in m\u00b2"
+          },
+          "compactness": {
+            "type": "number",
+            "title": "Compactness",
+            "description": "Polsby-Popper compactness score [0,1]"
+          },
+          "min_rotated_rect_width_m": {
+            "type": "number",
+            "title": "Min Rotated Rect Width M",
+            "description": "Width of minimum rotated rectangle in m"
+          },
+          "min_rotated_rect_height_m": {
+            "type": "number",
+            "title": "Min Rotated Rect Height M",
+            "description": "Height of minimum rotated rectangle in m"
+          }
+        },
+        "type": "object",
+        "required": [
+          "num_holes",
+          "hole_area_m2",
+          "convex_hull_area_m2",
+          "compactness",
+          "min_rotated_rect_width_m",
+          "min_rotated_rect_height_m"
+        ],
+        "title": "PolygonExtras",
+        "description": "Extra measurements specific to polygons."
+      },
+      "RasterExtras": {
+        "properties": {
+          "width_px": {
+            "type": "integer",
+            "title": "Width Px"
+          },
+          "height_px": {
+            "type": "integer",
+            "title": "Height Px"
+          },
+          "band_count": {
+            "type": "integer",
+            "title": "Band Count"
+          },
+          "pixel_width_m": {
+            "type": "number",
+            "title": "Pixel Width M"
+          },
+          "pixel_height_m": {
+            "type": "number",
+            "title": "Pixel Height M"
+          },
+          "pixel_area_m2": {
+            "type": "number",
+            "title": "Pixel Area M2"
+          },
+          "crs_wkt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crs Wkt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "width_px",
+          "height_px",
+          "band_count",
+          "pixel_width_m",
+          "pixel_height_m",
+          "pixel_area_m2"
+        ],
+        "title": "RasterExtras",
+        "description": "Extra measurements for GeoTIFF raster files."
+      },
+      "Summary": {
+        "properties": {
+          "total_area": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AreaValues"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_length": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LengthValues"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bbox": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoundingBox"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "centroid": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Centroid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "geometry_types": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Geometry Types",
+            "description": "Count of each geometry type"
+          },
+          "invalid_features": {
+            "type": "integer",
+            "title": "Invalid Features",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "Summary",
+        "description": "Aggregate measurements across all features."
+      },
+      "TrackExtras": {
+        "properties": {
+          "has_elevation": {
+            "type": "boolean",
+            "title": "Has Elevation"
+          },
+          "length_2d_m": {
+            "type": "number",
+            "title": "Length 2D M",
+            "description": "2D (horizontal) length in metres"
+          },
+          "length_3d_m": {
+            "type": "number",
+            "title": "Length 3D M",
+            "description": "3D (slant) length including elevation in metres"
+          },
+          "total_ascent_m": {
+            "type": "number",
+            "title": "Total Ascent M",
+            "description": "Total elevation gain in metres"
+          },
+          "total_descent_m": {
+            "type": "number",
+            "title": "Total Descent M",
+            "description": "Total elevation loss in metres"
+          },
+          "min_elevation_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Elevation M"
+          },
+          "max_elevation_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Elevation M"
+          },
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration S",
+            "description": "Track duration in seconds"
+          },
+          "avg_speed_kmh": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Speed Kmh",
+            "description": "Average speed in km/h"
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_elevation",
+          "length_2d_m",
+          "length_3d_m",
+          "total_ascent_m",
+          "total_descent_m"
+        ],
+        "title": "TrackExtras",
+        "description": "Extra measurements for GPX/KML tracks with elevation data."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

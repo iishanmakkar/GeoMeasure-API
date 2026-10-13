@@ -1,0 +1,340 @@
+{
+  "info": {
+    "_postman_id": "b3c8e472-8f92-4919-b5df-geomeasure-v1",
+    "name": "GeoMeasure API",
+    "description": "Production-grade Geospatial Measurement API powered by FastAPI, Shapely, PyProj, GeoPandas, and Rasterio.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "dev-key-12345",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "System & Discovery",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "API Version",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/version",
+              "host": ["{{baseUrl}}"],
+              "path": ["version"]
+            }
+          }
+        },
+        {
+          "name": "Supported Formats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/formats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "formats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Synchronous Measurements",
+      "item": [
+        {
+          "name": "Measure File (GeoJSON)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "tests/fixtures/sample.geojson"
+                },
+                {
+                  "key": "method",
+                  "value": "geodesic",
+                  "type": "text"
+                },
+                {
+                  "key": "units",
+                  "value": "metric",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/measure",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "measure"]
+            }
+          }
+        },
+        {
+          "name": "Measure Inline Geometry (WKT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"wkt\": \"POLYGON((77.2090 28.6139, 77.2190 28.6139, 77.2190 28.6239, 77.2090 28.6239, 77.2090 28.6139))\",\n  \"method\": \"geodesic\",\n  \"units\": \"metric\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/measure/geometry",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "measure", "geometry"]
+            }
+          }
+        },
+        {
+          "name": "Geodesic Distance & Bearing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": [77.2090, 28.6139],\n  \"to\": [72.8777, 19.0760]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/distance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "distance"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Asynchronous Processing",
+      "item": [
+        {
+          "name": "Submit Async Measurement Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "tests/fixtures/sample.geojson"
+                },
+                {
+                  "key": "method",
+                  "value": "geodesic",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/measure/async",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "measure", "async"]
+            }
+          }
+        },
+        {
+          "name": "Poll Job Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/jobs/:job_id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "jobs", ":job_id"],
+              "variable": [
+                {
+                  "key": "job_id",
+                  "value": "your-job-uuid-here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit History & Reports",
+      "item": [
+        {
+          "name": "List Measurement History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/history?page=1&page_size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "history"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Full Measurement Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/history/:entry_id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "history", ":entry_id"],
+              "variable": [
+                {
+                  "key": "entry_id",
+                  "value": "your-history-uuid-here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export Report as CSV",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/report/:entry_id.csv",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "report", ":entry_id.csv"],
+              "variable": [
+                {
+                  "key": "entry_id",
+                  "value": "your-history-uuid-here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export Report as GeoJSON",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/report/:entry_id.geojson",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "report", ":entry_id.geojson"],
+              "variable": [
+                {
+                  "key": "entry_id",
+                  "value": "your-history-uuid-here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete History Entry",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/history/:entry_id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "history", ":entry_id"],
+              "variable": [
+                {
+                  "key": "entry_id",
+                  "value": "your-history-uuid-here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

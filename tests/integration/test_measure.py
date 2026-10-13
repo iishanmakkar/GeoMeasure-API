@@ -173,3 +173,116 @@ class TestMetaEndpoints:
         format_names = [f["name"] for f in formats]
         assert "GeoJSON" in format_names
         assert "GPX" in format_names
+
+
+class TestHistoryAndReportsEndpoints:
+    """Tests for /history, /history/{id}, and /report/{id}.csv / .geojson."""
+
+    def test_history_lifecycle(self, client: TestClient) -> None:
+        # 1. Upload a sample file to generate a history entry
+        path = fixture_path("sample.geojson")
+        with open(path, "rb") as f:
+            resp = client.post(
+                "/api/v1/measure",
+                files={"file": ("sample.geojson", f, "application/geo+json")},
+            )
+        assert resp.status_code == 200
+
+        # 2. Get history list
+        hist_resp = client.get("/api/v1/history?page=1&page_size=10")
+        assert hist_resp.status_code == 200
+        data = hist_resp.json()
+        assert data["total"] >= 1
+        entry_id = data["items"][0]["id"]
+
+        # 3. Fetch single history entry
+        entry_resp = client.get(f"/api/v1/history/{entry_id}")
+        assert entry_resp.status_code == 200
+        report = entry_resp.json()
+        assert report["file"]["format"] == "geojson"
+
+        # 4. Export CSV
+        csv_resp = client.get(f"/api/v1/report/{entry_id}.csv")
+        assert csv_resp.status_code == 200
+        assert "text/csv" in csv_resp.headers["content-type"]
+        assert "geometry_type" in csv_resp.text
+
+        # 5. Export GeoJSON
+        geojson_resp = client.get(f"/api/v1/report/{entry_id}.geojson")
+        assert geojson_resp.status_code == 200
+        assert "application/geo+json" in geojson_resp.headers["content-type"]
+        gj_data = geojson_resp.json()
+        assert gj_data["type"] == "FeatureCollection"
+
+        # 6. Delete history entry
+        del_resp = client.delete(f"/api/v1/history/{entry_id}")
+        assert del_resp.status_code == 204
+
+        # 7. Confirm 404
+        assert client.get(f"/api/v1/history/{entry_id}").status_code == 404
+        assert client.get(f"/api/v1/report/{entry_id}.csv").status_code == 404
+        assert client.get(f"/api/v1/report/{entry_id}.geojson").status_code == 404
+        assert client.delete(f"/api/v1/history/{entry_id}").status_code == 404
+
+
+class TestAsyncMeasureEndpoint:
+    """Tests for POST /measure/async and GET /jobs/{job_id}."""
+
+    def test_measure_async(self, client: TestClient) -> None:
+        path = fixture_path("sample.geojson")
+        with open(path, "rb") as f:
+            resp = client.post(
+                "/api/v1/measure/async",
+                files={"file": ("sample.geojson", f, "application/geo+json")},
+            )
+        assert resp.status_code == 202
+        job_data = resp.json()
+        job_id = job_data["job_id"]
+        assert job_data["status"] in ("pending", "processing", "done")
+
+        # Poll status
+        poll_resp = client.get(f"/api/v1/jobs/{job_id}")
+        assert poll_resp.status_code == 200
+        assert poll_resp.json()["job_id"] == job_id
+
+    def test_job_not_found(self, client: TestClient) -> None:
+        resp = client.get("/api/v1/jobs/00000000-0000-0000-0000-000000000000")
+        assert resp.status_code == 404
+
+
+class TestMeasureOptions:
+    """Tests for measure query options: method, units, simplify, repair."""
+
+    def test_measure_projected_method(self, client: TestClient) -> None:
+        path = fixture_path("sample.geojson")
+        with open(path, "rb") as f:
+            resp = client.post(
+                "/api/v1/measure",
+                files={"file": ("sample.geojson", f, "application/geo+json")},
+                data={"method": "projected", "units": "both"},
+            )
+        assert resp.status_code == 200
+        report = resp.json()
+        assert report["method"] == "projected"
+
+    def test_measure_imperial_units(self, client: TestClient) -> None:
+        path = fixture_path("sample.geojson")
+        with open(path, "rb") as f:
+            resp = client.post(
+                "/api/v1/measure",
+                files={"file": ("sample.geojson", f, "application/geo+json")},
+                data={"units": "imperial", "include_properties": "false"},
+            )
+        assert resp.status_code == 200
+        report = resp.json()
+        assert report["features"][0].get("properties") is None
+
+    def test_measure_with_simplify_and_repair(self, client: TestClient) -> None:
+        path = fixture_path("sample.geojson")
+        with open(path, "rb") as f:
+            resp = client.post(
+                "/api/v1/measure",
+                files={"file": ("sample.geojson", f, "application/geo+json")},
+                data={"simplify_tolerance": "0.0001", "repair_geometry": "true"},
+            )
+        assert resp.status_code == 200

@@ -1,0 +1,132 @@
+### GeoMeasure API — VS Code REST Client / JetBrains HTTP Client Suite
+@baseUrl = http://localhost:8000
+@apiKey = dev-key-12345
+
+### 1. Health Check
+GET {{baseUrl}}/health
+Accept: application/json
+
+### 2. Version & Engine Info
+GET {{baseUrl}}/version
+Accept: application/json
+
+### 3. Supported Geospatial Formats
+GET {{baseUrl}}/api/v1/formats
+Accept: application/json
+
+### 4. Distance & Bearing (Delhi to Mumbai)
+POST {{baseUrl}}/api/v1/distance
+Content-Type: application/json
+
+{
+  "from": [77.2090, 28.6139],
+  "to": [72.8777, 19.0760]
+}
+
+### 5. Distance & Bearing (London to Tokyo)
+POST {{baseUrl}}/api/v1/distance
+Content-Type: application/json
+
+{
+  "from": [-0.1278, 51.5074],
+  "to": [139.6917, 35.6895]
+}
+
+### 6. Inline WKT Measurement (Equatorial 1-degree Polygon)
+POST {{baseUrl}}/api/v1/measure/geometry
+Content-Type: application/json
+
+{
+  "wkt": "POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))",
+  "method": "geodesic",
+  "units": "metric"
+}
+
+### 7. Inline GeoJSON Feature Measurement
+POST {{baseUrl}}/api/v1/measure/geometry
+Content-Type: application/json
+
+{
+  "geojson": {
+    "type": "Feature",
+    "properties": {
+      "name": "Central Park NYC"
+    },
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [-73.9818, 40.7681],
+        [-73.9580, 40.8006],
+        [-73.9493, 40.7969],
+        [-73.9730, 40.7644],
+        [-73.9818, 40.7681]
+      ]]
+    }
+  },
+  "method": "geodesic",
+  "units": "imperial"
+}
+
+### 8. Upload GeoJSON File for Measurement
+POST {{baseUrl}}/api/v1/measure
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="sample.geojson"
+Content-Type: application/geo+json
+
+< ../tests/fixtures/sample.geojson
+--boundary
+Content-Disposition: form-data; name="method"
+
+geodesic
+--boundary
+Content-Disposition: form-data; name="units"
+
+metric
+--boundary--
+
+### 9. Upload GPX Fitness/Elevation Track
+POST {{baseUrl}}/api/v1/measure
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="sample.gpx"
+Content-Type: application/gpx+xml
+
+< ../tests/fixtures/sample.gpx
+--boundary--
+
+### 10. Submit Async Job (Large File Queue)
+POST {{baseUrl}}/api/v1/measure/async
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="sample.geojson"
+Content-Type: application/geo+json
+
+< ../tests/fixtures/sample.geojson
+--boundary
+Content-Disposition: form-data; name="method"
+
+geodesic
+--boundary--
+
+### 11. Poll Async Job Status
+# Replace {{jobId}} with the job_id returned from request 10
+@jobId = 00000000-0000-0000-0000-000000000000
+GET {{baseUrl}}/api/v1/jobs/{{jobId}}
+
+### 12. List Measurement History
+GET {{baseUrl}}/api/v1/history?page=1&page_size=10
+
+### 13. Fetch Measurement Report from History
+# Replace {{entryId}} with an ID from /history
+@entryId = 00000000-0000-0000-0000-000000000000
+GET {{baseUrl}}/api/v1/history/{{entryId}}
+
+### 14. Export Measurements to CSV
+GET {{baseUrl}}/api/v1/report/{{entryId}}.csv
+
+### 15. Export Measurements to GeoJSON FeatureCollection
+GET {{baseUrl}}/api/v1/report/{{entryId}}.geojson
