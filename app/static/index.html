@@ -145,10 +145,17 @@
         <button id="btn-unit-imperial" onclick="setUnits('imperial')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all">Imperial</button>
       </div>
 
+      <!-- CARTO Auth Status Button -->
+      <button onclick="openCartoModal()" id="btn-carto-status" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-xs font-mono text-slate-300 flex items-center space-x-1.5 transition" title="CARTO API Key Configuration">
+        <span id="carto-status-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+        <span id="carto-status-text">CARTO KEY</span>
+      </button>
+
       <!-- Basemap Switcher -->
       <div class="relative">
         <select id="basemap-select" onchange="switchBasemap(this.value)" class="bg-slate-800/80 border border-slate-700/60 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50 cursor-pointer">
           <option value="dark">Carto Dark Matter</option>
+          <option value="voyager">Carto Voyager</option>
           <option value="satellite">Esri World Imagery</option>
           <option value="light">Carto Positron</option>
           <option value="osm">OpenStreetMap</option>
@@ -704,6 +711,35 @@
   <!-- TOAST NOTIFICATIONS CONTAINER -->
   <div id="toast-container" class="fixed top-16 right-4 z-50 space-y-2 pointer-events-none"></div>
 
+  <!-- CARTO API KEY CONFIGURATION MODAL -->
+  <div id="carto-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel w-full max-w-md rounded-2xl p-6 space-y-4 border border-white/10 shadow-2xl relative">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-mono text-xs font-bold">C</div>
+          <h3 class="text-sm font-bold text-white">CARTO Authentication & Basemaps</h3>
+        </div>
+        <button onclick="closeCartoModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400">Configure your CARTO API Access Token / Key to unlock high-rate vector and raster basemaps (Dark Matter, Voyager, Positron).</p>
+      
+      <div class="space-y-1.5">
+        <label class="text-[11px] font-semibold text-slate-300">CARTO API Key / Access Token</label>
+        <textarea id="carto-key-input" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 font-mono text-xs text-emerald-400 focus:outline-none focus:border-emerald-500" placeholder="Paste your CARTO JWT token or API key here"></textarea>
+      </div>
+
+      <div class="flex items-center justify-between text-xs text-slate-400">
+        <span id="carto-modal-status">Status: Checking...</span>
+        <button onclick="clearCartoKey()" class="text-rose-400 hover:text-rose-300 underline text-[11px]">Remove Key</button>
+      </div>
+
+      <div class="flex space-x-2 pt-2">
+        <button onclick="closeCartoModal()" class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">Cancel</button>
+        <button onclick="saveCartoKey()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-500/10">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MAIN JAVASCRIPT APPLICATION LOGIC -->
   <script>
     // Global State
@@ -720,6 +756,7 @@
     let drawPoints = [];
     let tempDrawLayer = null;
     let pickTarget = null;
+    let cartoApiKey = localStorage.getItem('geomeasure_carto_key') || '';
 
     // Unit conversion constants
     const SQM_TO_SQKM = 1e-6;
@@ -733,9 +770,110 @@
     // Initialize on page load
     window.addEventListener('DOMContentLoaded', () => {
       initMap();
+      fetchClientConfig();
       checkApiHealth();
       fetchHistory();
     });
+
+    // -------------------------------------------------------------
+    // CARTO AUTHENTICATION & BASEMAP CONFIGURATION
+    // -------------------------------------------------------------
+    async function fetchClientConfig() {
+      try {
+        const res = await fetch('/api/v1/config');
+        if (res.ok) {
+          const cfg = await res.json();
+          if (!cartoApiKey && cfg.carto_api_key) {
+            cartoApiKey = cfg.carto_api_key;
+            localStorage.setItem('geomeasure_carto_key', cartoApiKey);
+          }
+        }
+      } catch (e) {}
+      updateCartoUI();
+      updateBasemapLayers();
+    }
+
+    function getCartoTileUrl(style) {
+      const keyParam = cartoApiKey ? `?api_key=${encodeURIComponent(cartoApiKey)}` : '';
+      return `https://{s}.basemaps.cartocdn.com/${style}/{z}/{x}/{y}{r}.png${keyParam}`;
+    }
+
+    function updateCartoUI() {
+      const pill = document.getElementById('btn-carto-status');
+      const dot = document.getElementById('carto-status-dot');
+      const text = document.getElementById('carto-status-text');
+      const modalStatus = document.getElementById('carto-modal-status');
+      const keyInput = document.getElementById('carto-key-input');
+
+      if (cartoApiKey) {
+        if (pill) pill.className = "px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-mono text-emerald-400 flex items-center space-x-1.5 transition";
+        if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-glow";
+        if (text) text.textContent = "CARTO AUTH";
+        if (modalStatus) modalStatus.innerHTML = '<span class="text-emerald-400 font-semibold">Status: Active & Authenticated</span>';
+        if (keyInput) keyInput.value = cartoApiKey;
+      } else {
+        if (pill) pill.className = "px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-xs font-mono text-slate-400 flex items-center space-x-1.5 transition";
+        if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-slate-500";
+        if (text) text.textContent = "CARTO KEY";
+        if (modalStatus) modalStatus.innerHTML = '<span class="text-slate-400">Status: Public Tier</span>';
+        if (keyInput) keyInput.value = '';
+      }
+    }
+
+    function openCartoModal() {
+      updateCartoUI();
+      document.getElementById('carto-modal').classList.remove('hidden');
+    }
+
+    function closeCartoModal() {
+      document.getElementById('carto-modal').classList.add('hidden');
+    }
+
+    function saveCartoKey() {
+      const key = document.getElementById('carto-key-input').value.trim();
+      cartoApiKey = key;
+      if (key) {
+        localStorage.setItem('geomeasure_carto_key', key);
+        showToast('CARTO API Key saved and active!', 'success');
+      } else {
+        localStorage.removeItem('geomeasure_carto_key');
+        showToast('CARTO API Key removed', 'info');
+      }
+      updateCartoUI();
+      updateBasemapLayers();
+      closeCartoModal();
+    }
+
+    function clearCartoKey() {
+      cartoApiKey = '';
+      localStorage.removeItem('geomeasure_carto_key');
+      document.getElementById('carto-key-input').value = '';
+      updateCartoUI();
+      updateBasemapLayers();
+      closeCartoModal();
+      showToast('CARTO API Key cleared', 'info');
+    }
+
+    function updateBasemapLayers() {
+      const currentBasemap = document.getElementById('basemap-select').value;
+      const wasAdded = basemapLayers[currentBasemap] && map.hasLayer(basemapLayers[currentBasemap]);
+      
+      Object.values(basemapLayers).forEach(l => map.removeLayer(l));
+
+      basemapLayers = {
+        dark: L.tileLayer(getCartoTileUrl('dark_all'), { maxZoom: 19, attribution: '© CARTO, © OpenStreetMap' }),
+        voyager: L.tileLayer(getCartoTileUrl('rastertiles/voyager'), { maxZoom: 19, attribution: '© CARTO, © OpenStreetMap' }),
+        light: L.tileLayer(getCartoTileUrl('light_all'), { maxZoom: 19, attribution: '© CARTO, © OpenStreetMap' }),
+        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
+        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })
+      };
+
+      if (basemapLayers[currentBasemap]) {
+        basemapLayers[currentBasemap].addTo(map);
+      } else {
+        basemapLayers.dark.addTo(map);
+      }
+    }
 
     // -------------------------------------------------------------
     // MAP INITIALIZATION
@@ -750,13 +888,7 @@
       L.control.scale({ position: 'bottomleft', imperial: false, metric: true }).addTo(map);
 
       // Basemap tile layers
-      basemapLayers = {
-        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }),
-        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
-        light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }),
-        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })
-      };
-      basemapLayers.dark.addTo(map);
+      updateBasemapLayers();
 
       // Layer groups
       drawLayerGroup = L.layerGroup().addTo(map);

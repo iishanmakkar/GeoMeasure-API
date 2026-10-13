@@ -109,3 +109,18 @@ async def get_formats() -> dict:
         "async_limit_mb": settings.max_async_size_mb,
         "max_features": settings.max_features,
     }
+
+
+@router.get(
+    "/api/v1/config",
+    summary="Client configuration",
+    response_description="Client-facing configuration and map keys",
+    tags=["Meta"],
+)
+async def get_client_config() -> dict[str, Any]:
+    """Return public configuration and integration keys for map rendering."""
+    return {
+        "carto_api_key": settings.carto_api_key,
+        "api_version": settings.api_version,
+        "max_sync_size_mb": settings.max_sync_size_mb,
+    }

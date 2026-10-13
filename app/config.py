@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     # Auth & rate limiting
     api_keys: str = Field(default="dev-key-12345")
     rate_limit: str = Field(default="100/minute")
+    carto_api_key: str | None = Field(default=None)
 
     # CORS
     allowed_origins: str = Field(default="*")

@@ -19,3 +19,12 @@ def test_static_files_accessible(client: TestClient) -> None:
     response = client.get("/static/index.html")
     assert response.status_code == 200
     assert "GeoMeasure Workstation" in response.text
+
+
+def test_client_config_endpoint(client: TestClient) -> None:
+    """GET /api/v1/config should return client config with carto key support."""
+    response = client.get("/api/v1/config")
+    assert response.status_code == 200
+    data = response.json()
+    assert "carto_api_key" in data
+    assert "api_version" in data
