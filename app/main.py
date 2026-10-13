@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -83,3 +86,13 @@ app.include_router(jobs.router, prefix=API_PREFIX)
 app.include_router(distance.router, prefix=API_PREFIX)
 app.include_router(history.router, prefix=API_PREFIX)
 app.include_router(reports.router, prefix=API_PREFIX)
+
+# Static files & Web GIS Workstation SPA
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    @app.get("/", response_class=FileResponse, include_in_schema=False)
+    async def serve_workstation() -> FileResponse:
+        """Serve the interactive GeoMeasure Workstation single-page application."""
+        return FileResponse(STATIC_DIR / "index.html")

@@ -50,11 +50,28 @@ GeoMeasure calculates **true geodesics on the WGS84 ellipsoid** (via C-extension
   - `GeoPackage` (`.gpkg` — OGC standard SQLite container parsing)
   - `Delimited Text` (`.csv` — auto-sniffs latitude/longitude headers or inline WKT)
   - `GeoTIFF` (`.tif`, `.tiff` — pixel dimensions, resolution, raster bounding box via `rasterio`)
+- **🖥️ Interactive Web GIS Workstation**: A modern, dark-themed GIS workbench served at `/` featuring live WGS84 drawing, drag-and-drop file inspection, great-circle navigation, 3D GPX elevation profiles, and topology healing.
 - **⚙️ Asynchronous Task Queue**: Background job execution (`/measure/async`) with persistent SQLite tracking for massive files (up to 500 MB).
 - **🛡️ Self-Healing Geometry Repair**: Automatically repairs self-intersecting polygons (`repair_geometry=true`) and gracefully isolates native `TopologyException` errors without failing the request.
 - **📊 Multi-Unit Conversions**: Simultaneous reporting in Metric (`m²`, `km²`, `ha`) and Imperial (`ft²`, `acres`, `mi²`).
 - **📥 Turnkey Report Exports**: Download measurement summaries and per-feature tables as **CSV** or **GeoJSON FeatureCollection** (`/api/v1/report/{id}.csv`).
 - **🔒 Enterprise Security**: Rate limiting via `slowapi`, API key authentication (`X-API-Key`), zip-bomb safety limits, and strict CORS policies.
+
+---
+
+## 🖥️ Interactive Web GIS Workstation
+
+GeoMeasure includes an interactive, browser-based Web GIS Workstation served directly at root (`http://localhost:8000/`).
+
+| Capability | What It Does |
+|---|---|
+| **🌐 Multi-Format Dropzone** | Drag & drop any of the 8 supported formats (`.geojson`, `.kml`, `.kmz`, `.gpx`, `.zip`, `.gpkg`, `.csv`, `.tif`) to view rendered geometries and complete measurement reports instantly. |
+| **✏️ Draw Studio** | Draw polygons, polylines, circle buffers, and waypoints with real-time WGS84 ellipsoidal area, perimeter, and length computations. |
+| **✈️ Great-Circle Navigator** | Compute shortest flight paths between any two points on Earth with curved geodesic arcs, initial/final azimuths, nautical miles, and statute miles. |
+| **⛰️ 3D GPX Elevation Visualizer** | Interactive elevation profile SVG graph with hover scrubber synchronized to a moving map beacon, showing 3D slant distances and cumulative ascent/descent. |
+| **🩺 Topology Repair Lab** | Diagnose invalid self-intersecting geometries (e.g. Bowtie polygons) and auto-heal them using Shapely 2.0 `make_valid`. |
+| **💾 History & Export Hub** | Review past audit logs and download reports with one click in CSV or GeoJSON. |
+
 
 ---
 

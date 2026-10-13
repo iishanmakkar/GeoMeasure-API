@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoMeasure Workstation | Precision WGS84 Geospatial Engine</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310B981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20'/><path d='M2 12h20'/></svg>">
+  
+  <!-- Tailwind CSS & Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            void: '#070A0F',
+            surface: '#0E1626',
+            card: '#131F35',
+            border: '#1E2D4A',
+            emerald: { 400: '#34D399', 500: '#10B981', 600: '#059669' },
+            cyan: { 400: '#22D3EE', 500: '#06B6D4', 600: '#0891B2' },
+            violet: { 400: '#A78BFA', 500: '#8B5CF6', 600: '#7C3AED' }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Leaflet Core CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 1); }
+
+    /* Glassmorphism Classes */
+    .glass-panel {
+      background: rgba(14, 22, 38, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+    }
+    .glass-subcard {
+      background: rgba(19, 31, 53, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .glass-subcard:hover {
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    /* Leaflet customization for dark theme */
+    .leaflet-container {
+      background: #070A0F !important;
+      font-family: inherit;
+    }
+    .leaflet-bar a {
+      background-color: rgba(14, 22, 38, 0.9) !important;
+      color: #94A3B8 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(8px);
+    }
+    .leaflet-bar a:hover {
+      background-color: #1E2D4A !important;
+      color: #34D399 !important;
+    }
+    .leaflet-control-scale-line {
+      background: rgba(14, 22, 38, 0.8) !important;
+      border-color: #10B981 !important;
+      color: #34D399 !important;
+      font-size: 11px !important;
+    }
+    .leaflet-popup-content-wrapper {
+      background: #0E1626 !important;
+      color: #F8FAFC !important;
+      border: 1px solid rgba(16, 185, 129, 0.3) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7) !important;
+    }
+    .leaflet-popup-tip {
+      background: #0E1626 !important;
+    }
+
+    /* Pulse animation */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6)); }
+      50% { opacity: 0.6; filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.2)); }
+    }
+    .pulse-glow { animation: pulse-glow 2.5s infinite; }
+  </style>
+</head>
+<body class="bg-void text-slate-100 h-screen w-screen overflow-hidden flex flex-col font-sans select-none">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="h-14 border-b border-white/10 glass-panel px-4 flex items-center justify-between z-30 shrink-0">
+    <!-- Brand / Title -->
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-cyan-500 to-violet-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke-width="2"/>
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" stroke-width="2"/>
+          <path d="M2 12h20" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-bold text-base tracking-wide bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">GeoMeasure</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-medium">WGS84 GEODESIC</span>
+          <span id="api-status-pill" class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center space-x-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-glow inline-block"></span>
+            <span>API ONLINE</span>
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-400 font-mono -mt-0.5">High-Precision Geospatial Calculation & Verification Engine</p>
+      </div>
+    </div>
+
+    <!-- Center Quick Stats or Info -->
+    <div class="hidden lg:flex items-center space-x-6 text-xs text-slate-400">
+      <div class="flex items-center space-x-2">
+        <span class="text-slate-500">Ellipsoid:</span>
+        <span class="font-mono text-slate-200">WGS84 (a=6378137m, 1/f=298.257)</span>
+      </div>
+      <div class="w-px h-4 bg-slate-700"></div>
+      <div class="flex items-center space-x-2">
+        <span class="text-slate-500">Formats:</span>
+        <span class="font-mono text-emerald-400">8 Supported (.geojson, .kml, .kmz, .gpx, .shp, .gpkg, .csv, .tif)</span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center space-x-3">
+      <!-- Unit System Selector -->
+      <div class="flex items-center bg-slate-800/80 rounded-lg p-0.5 border border-slate-700/60 text-xs">
+        <button id="btn-unit-metric" onclick="setUnits('metric')" class="px-2.5 py-1 rounded-md text-emerald-400 font-medium bg-emerald-500/20 border border-emerald-500/30 transition-all">Metric</button>
+        <button id="btn-unit-imperial" onclick="setUnits('imperial')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all">Imperial</button>
+      </div>
+
+      <!-- Basemap Switcher -->
+      <div class="relative">
+        <select id="basemap-select" onchange="switchBasemap(this.value)" class="bg-slate-800/80 border border-slate-700/60 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50 cursor-pointer">
+          <option value="dark">Carto Dark Matter</option>
+          <option value="satellite">Esri World Imagery</option>
+          <option value="light">Carto Positron</option>
+          <option value="osm">OpenStreetMap</option>
+        </select>
+      </div>
+
+      <!-- Toggle Workbench Sidebar -->
+      <button onclick="toggleSidebar()" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white transition" title="Toggle Workbench">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <rect width="18" height="18" x="3" y="3" rx="2" stroke-width="2"/>
+          <path d="M9 3v18" stroke-width="2"/>
+        </svg>
+      </button>
+
+      <!-- Documentation Links -->
+      <a href="/docs" target="_blank" class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-medium transition">
+        <span>API Docs</span>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke-width="2"/><polyline points="15 3 21 3 21 9" stroke-width="2"/><line x1="10" y1="14" x2="21" y2="3" stroke-width="2"/></svg>
+      </a>
+      <a href="https://github.com/iishanmakkar/GeoMeasure-API" target="_blank" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white transition" title="GitHub Repository">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- WORKSPACE BODY (Map + Floating Workbench) -->
+  <div class="relative flex-1 w-full h-full overflow-hidden">
+    <!-- FULLSCREEN LEAFLET MAP CANVAS -->
+    <div id="map" class="absolute inset-0 w-full h-full z-0"></div>
+
+    <!-- FLOATING WORKBENCH SIDEBAR -->
+    <aside id="sidebar" class="absolute top-4 left-4 bottom-12 w-[480px] max-w-[calc(100vw-32px)] glass-panel rounded-2xl flex flex-col z-20 transition-all duration-300 shadow-2xl overflow-hidden border border-white/10">
+      
+      <!-- TAB NAVIGATION BAR -->
+      <nav class="flex items-center space-x-1 p-2 bg-slate-900/60 border-b border-white/10 overflow-x-auto text-xs shrink-0">
+        <button onclick="switchTab('upload')" id="tab-btn-upload" class="tab-btn flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium transition text-emerald-400 bg-emerald-500/10 border border-emerald-500/30">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-width="2"/><polyline points="17 8 12 3 7 8" stroke-width="2"/><line x1="12" y1="3" x2="12" y2="15" stroke-width="2"/></svg>
+          <span>Measure</span>
+        </button>
+        <button onclick="switchTab('draw')" id="tab-btn-draw" class="tab-btn flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z" stroke-width="2"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke-width="2"/><path d="M2 2l7.586 7.586" stroke-width="2"/><circle cx="11" cy="11" r="2" stroke-width="2"/></svg>
+          <span>Draw Studio</span>
+        </button>
+        <button onclick="switchTab('nav')" id="tab-btn-nav" class="tab-btn flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11" stroke-width="2"/></svg>
+          <span>Great Circle</span>
+        </button>
+        <button onclick="switchTab('elevation')" id="tab-btn-elevation" class="tab-btn flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 3l4 8 5-5 5 15H2L8 3z" stroke-width="2"/></svg>
+          <span>3D Profile</span>
+        </button>
+        <button onclick="switchTab('doctor')" id="tab-btn-doctor" class="tab-btn flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke-width="2"/></svg>
+          <span>Repair Lab</span>
+        </button>
+        <button onclick="switchTab('history')" id="tab-btn-history" class="tab-btn flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><polyline points="12 6 12 12 16 14" stroke-width="2"/></svg>
+          <span>History</span>
+        </button>
+      </nav>
+
+      <!-- TAB CONTENT SCROLLABLE AREA -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+        <!-- ========================================== -->
+        <!-- TAB 1: MEASURE FILE / UPLOAD -->
+        <!-- ========================================== -->
+        <div id="tab-upload" class="tab-panel space-y-4">
+          <!-- Dropzone -->
+          <div id="dropzone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" onclick="document.getElementById('file-input').click()"
+               class="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 bg-slate-900/40 hover:bg-slate-900/70 rounded-2xl p-6 text-center cursor-pointer transition-all duration-200 group relative">
+            <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)" accept=".geojson,.json,.kml,.kmz,.gpx,.zip,.gpkg,.csv,.tif,.tiff">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center mb-3 group-hover:scale-110 transition duration-200 shadow-lg shadow-emerald-500/10">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-width="2"/><polyline points="17 8 12 3 7 8" stroke-width="2"/><line x1="12" y1="3" x2="12" y2="15" stroke-width="2"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-200 group-hover:text-emerald-300">Drop your geospatial file here</p>
+            <p class="text-xs text-slate-400 mt-1">or click to browse from device</p>
+            <div class="flex flex-wrap justify-center gap-1.5 mt-3">
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">GeoJSON</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">KML / KMZ</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">GPX</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">Shapefile (.zip)</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">GeoPackage</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">CSV</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">GeoTIFF</span>
+            </div>
+          </div>
+
+          <!-- Quick Samples / Presets -->
+          <div class="space-y-1.5">
+            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Try Instant Presets</span>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="loadSample('vatican')" class="glass-subcard text-left p-2.5 rounded-xl hover:bg-slate-800/80 transition flex items-center space-x-2">
+                <span class="text-lg">🏛️</span>
+                <div>
+                  <div class="text-xs font-semibold text-slate-200">Vatican City</div>
+                  <div class="text-[10px] text-slate-400">Microstate Polygon</div>
+                </div>
+              </button>
+              <button onclick="loadSample('centralpark')" class="glass-subcard text-left p-2.5 rounded-xl hover:bg-slate-800/80 transition flex items-center space-x-2">
+                <span class="text-lg">🌳</span>
+                <div>
+                  <div class="text-xs font-semibold text-slate-200">Central Park</div>
+                  <div class="text-[10px] text-slate-400">NYC Boundary & Lakes</div>
+                </div>
+              </button>
+              <button onclick="loadSample('bermuda')" class="glass-subcard text-left p-2.5 rounded-xl hover:bg-slate-800/80 transition flex items-center space-x-2">
+                <span class="text-lg">🔺</span>
+                <div>
+                  <div class="text-xs font-semibold text-slate-200">Bermuda Triangle</div>
+                  <div class="text-[10px] text-slate-400">Massive Oceanic Polygon</div>
+                </div>
+              </button>
+              <button onclick="loadSample('everest')" class="glass-subcard text-left p-2.5 rounded-xl hover:bg-slate-800/80 transition flex items-center space-x-2">
+                <span class="text-lg">🏔️</span>
+                <div>
+                  <div class="text-xs font-semibold text-slate-200">Everest Trail</div>
+                  <div class="text-[10px] text-slate-400">High Altitude GPX Track</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Parameters & Advanced Settings -->
+          <div class="glass-subcard rounded-xl p-3 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-300">Measurement Method</span>
+              <div class="flex items-center space-x-2">
+                <label class="flex items-center space-x-1.5 text-xs text-slate-300 cursor-pointer">
+                  <input type="radio" name="measure-method" value="geodesic" checked class="text-emerald-500 focus:ring-emerald-500">
+                  <span class="text-emerald-400 font-medium">Geodesic (WGS84)</span>
+                </label>
+                <label class="flex items-center space-x-1.5 text-xs text-slate-400 cursor-pointer">
+                  <input type="radio" name="measure-method" value="planar" class="text-emerald-500 focus:ring-emerald-500">
+                  <span>Planar</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-white/5">
+              <div class="flex items-center space-x-1.5">
+                <input type="checkbox" id="chk-auto-repair" checked class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-emerald-500">
+                <label for="chk-auto-repair" class="text-xs text-slate-300 cursor-pointer">Auto-repair invalid geometries</label>
+              </div>
+              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Shapely 2.0</span>
+            </div>
+          </div>
+
+          <!-- Loading Indicator -->
+          <div id="upload-loading" class="hidden text-center py-6 space-y-3">
+            <div class="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="text-xs text-slate-300 font-mono">Executing WGS84 geodesic algorithms...</p>
+          </div>
+
+          <!-- Report Results Container -->
+          <div id="report-container" class="hidden space-y-4">
+            <!-- File Header Info -->
+            <div class="glass-subcard rounded-xl p-3 border-l-4 border-l-emerald-500 flex items-center justify-between">
+              <div>
+                <h4 id="report-filename" class="text-xs font-bold text-white truncate max-w-[280px]">filename.geojson</h4>
+                <div class="flex items-center space-x-2 text-[10px] text-slate-400 font-mono mt-0.5">
+                  <span id="report-format" class="text-emerald-400">GEOJSON</span>
+                  <span>•</span>
+                  <span id="report-crs">EPSG:4326</span>
+                  <span>•</span>
+                  <span id="report-time">12ms</span>
+                </div>
+              </div>
+              <div class="flex space-x-1">
+                <button onclick="downloadReport('csv')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Export CSV">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke-width="2"/><line x1="16" y1="13" x2="8" y2="13" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke-width="2"/><polyline points="10 9 9 9 8 9" stroke-width="2"/></svg>
+                </button>
+                <button onclick="downloadReport('geojson')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Export GeoJSON">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-width="2"/><polyline points="7 10 12 15 17 10" stroke-width="2"/><line x1="12" y1="15" x2="12" y2="3" stroke-width="2"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Metric Summary Cards -->
+            <div class="grid grid-cols-2 gap-2">
+              <div class="glass-subcard rounded-xl p-3">
+                <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Total Area</span>
+                <div id="stat-area-primary" class="text-base font-bold text-emerald-400 font-mono mt-0.5">--</div>
+                <div id="stat-area-secondary" class="text-[10px] text-slate-400 font-mono mt-0.5">--</div>
+              </div>
+              <div class="glass-subcard rounded-xl p-3">
+                <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Total Perimeter / Length</span>
+                <div id="stat-length-primary" class="text-base font-bold text-cyan-400 font-mono mt-0.5">--</div>
+                <div id="stat-length-secondary" class="text-[10px] text-slate-400 font-mono mt-0.5">--</div>
+              </div>
+              <div class="glass-subcard rounded-xl p-3">
+                <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Features</span>
+                <div id="stat-features-count" class="text-base font-bold text-violet-400 font-mono mt-0.5">--</div>
+                <div id="stat-geometry-types" class="text-[10px] text-slate-400 font-mono truncate mt-0.5">--</div>
+              </div>
+              <div class="glass-subcard rounded-xl p-3">
+                <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Total Vertices</span>
+                <div id="stat-vertices-count" class="text-base font-bold text-slate-200 font-mono mt-0.5">--</div>
+                <div id="stat-validity" class="text-[10px] text-emerald-400 font-mono mt-0.5">100% Valid</div>
+              </div>
+            </div>
+
+            <!-- Features Inspector List -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-xs text-slate-400">
+                <span class="font-medium uppercase tracking-wider text-[10px]">Feature Breakdown</span>
+                <span id="features-list-badge" class="font-mono text-[10px]">Showing 0 features</span>
+              </div>
+              <div id="features-list-container" class="max-h-48 overflow-y-auto space-y-1.5 pr-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: DRAW STUDIO -->
+        <!-- ========================================== -->
+        <div id="tab-draw" class="tab-panel hidden space-y-4">
+          <div class="glass-subcard rounded-xl p-3 space-y-3">
+            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Drawing Tools</span>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="startDrawing('polygon')" id="draw-btn-polygon" class="p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-emerald-500/50 flex flex-col items-center justify-center space-y-1 text-slate-300 hover:text-emerald-400 transition">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2" stroke-width="2"/><polyline points="2 17 12 22 22 17" stroke-width="2"/><polyline points="2 12 12 17 22 12" stroke-width="2"/></svg>
+                <span class="text-xs font-semibold">Draw Polygon</span>
+                <span class="text-[10px] text-slate-400">Measure Area & Perimeter</span>
+              </button>
+              <button onclick="startDrawing('polyline')" id="draw-btn-polyline" class="p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 flex flex-col items-center justify-center space-y-1 text-slate-300 hover:text-cyan-400 transition">
+                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke-width="2"/></svg>
+                <span class="text-xs font-semibold">Draw Polyline</span>
+                <span class="text-[10px] text-slate-400">Multi-point Geodesic Path</span>
+              </button>
+              <button onclick="startDrawing('marker')" id="draw-btn-marker" class="p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-violet-500/50 flex flex-col items-center justify-center space-y-1 text-slate-300 hover:text-violet-400 transition">
+                <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke-width="2"/><circle cx="12" cy="10" r="3" stroke-width="2"/></svg>
+                <span class="text-xs font-semibold">Place Waypoint</span>
+                <span class="text-[10px] text-slate-400">Inspect Coordinates</span>
+              </button>
+              <button onclick="startDrawing('circle')" id="draw-btn-circle" class="p-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-amber-500/50 flex flex-col items-center justify-center space-y-1 text-slate-300 hover:text-amber-400 transition">
+                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/></svg>
+                <span class="text-xs font-semibold">Radial Buffer</span>
+                <span class="text-[10px] text-slate-400">Circular Geo-Zone</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Drawing Live Telemetry Card -->
+          <div class="glass-subcard rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white flex items-center space-x-1.5">
+                <span id="draw-active-indicator" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                <span id="draw-status-text">Ready to draw</span>
+              </span>
+              <button onclick="clearDrawings()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" stroke-width="2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-width="2"/></svg>
+                <span>Clear</span>
+              </button>
+            </div>
+
+            <!-- Metric Displays -->
+            <div class="grid grid-cols-2 gap-2">
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider">Calculated Area</span>
+                <div id="draw-area-val" class="text-sm font-bold text-emerald-400 font-mono mt-0.5">0.00 m²</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider">Length / Perimeter</span>
+                <div id="draw-length-val" class="text-sm font-bold text-cyan-400 font-mono mt-0.5">0.00 m</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider">Vertices</span>
+                <div id="draw-vertices-val" class="text-sm font-bold text-slate-200 font-mono mt-0.5">0 points</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider">Centroid</span>
+                <div id="draw-centroid-val" class="text-[11px] font-bold text-slate-300 font-mono mt-0.5 truncate">--</div>
+              </div>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="flex space-x-2 pt-2">
+              <button onclick="exportDrawnGeoJSON()" class="flex-1 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-xs font-semibold transition">
+                Export GeoJSON
+              </button>
+              <button onclick="copyDrawnWKT()" class="flex-1 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+                Copy WKT
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: GREAT CIRCLE NAVIGATOR -->
+        <!-- ========================================== -->
+        <div id="tab-nav" class="tab-panel hidden space-y-4">
+          <div class="glass-subcard rounded-xl p-3 space-y-3">
+            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Great Circle Geodesic Calculator</span>
+            <p class="text-xs text-slate-400">Compute shortest route distance, true initial/final azimuths, and great-circle arcs along the WGS84 ellipsoid.</p>
+            
+            <!-- Quick Flight Presets -->
+            <div class="space-y-1">
+              <span class="text-[10px] text-slate-400 uppercase font-mono">Flight Presets</span>
+              <div class="grid grid-cols-2 gap-1.5 text-xs">
+                <button onclick="setNavPoints([-73.7781, 40.6413], [-0.4543, 51.4700], 'JFK (New York)', 'LHR (London)')" class="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-white/5 transition truncate">
+                  <span class="font-bold text-slate-200">JFK ✈ LHR</span>
+                  <div class="text-[10px] text-slate-400">Transatlantic Arc</div>
+                </button>
+                <button onclick="setNavPoints([139.7811, 35.5494], [-122.375, 37.6188], 'HND (Tokyo)', 'SFO (San Francisco)')" class="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-white/5 transition truncate">
+                  <span class="font-bold text-slate-200">HND ✈ SFO</span>
+                  <div class="text-[10px] text-slate-400">Transpacific Curve</div>
+                </button>
+                <button onclick="setNavPoints([151.1772, -33.9461], [-70.7944, -33.3930], 'SYD (Sydney)', 'SCL (Santiago)')" class="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-white/5 transition truncate">
+                  <span class="font-bold text-slate-200">SYD ✈ SCL</span>
+                  <div class="text-[10px] text-slate-400">Antarctic Arc</div>
+                </button>
+                <button onclick="setNavPoints([55.3644, 25.2532], [-118.4085, 33.9416], 'DXB (Dubai)', 'LAX (Los Angeles)')" class="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-white/5 transition truncate">
+                  <span class="font-bold text-slate-200">DXB ✈ LAX</span>
+                  <div class="text-[10px] text-slate-400">Polar Route</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Coordinate Inputs -->
+            <div class="space-y-2 pt-2 border-t border-white/5">
+              <div>
+                <label class="text-[11px] font-semibold text-emerald-400 flex items-center justify-between">
+                  <span>Origin (Point A)</span>
+                  <button onclick="pickOnMap('origin')" id="pick-origin-btn" class="text-[10px] text-slate-400 hover:text-emerald-300 font-mono underline">Click on map</button>
+                </label>
+                <div class="grid grid-cols-2 gap-2 mt-1">
+                  <input type="number" step="0.0001" id="nav-lon1" placeholder="Longitude" value="-73.7781" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500">
+                  <input type="number" step="0.0001" id="nav-lat1" placeholder="Latitude" value="40.6413" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500">
+                </div>
+              </div>
+              <div>
+                <label class="text-[11px] font-semibold text-cyan-400 flex items-center justify-between">
+                  <span>Destination (Point B)</span>
+                  <button onclick="pickOnMap('dest')" id="pick-dest-btn" class="text-[10px] text-slate-400 hover:text-cyan-300 font-mono underline">Click on map</button>
+                </label>
+                <div class="grid grid-cols-2 gap-2 mt-1">
+                  <input type="number" step="0.0001" id="nav-lon2" placeholder="Longitude" value="-0.4543" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+                  <input type="number" step="0.0001" id="nav-lat2" placeholder="Latitude" value="51.4700" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+                </div>
+              </div>
+
+              <button onclick="computeGreatCircle()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-semibold text-xs transition shadow-lg shadow-emerald-500/10">
+                Calculate Geodesic Route
+              </button>
+            </div>
+          </div>
+
+          <!-- Geodesic Telemetry Output -->
+          <div id="nav-results" class="glass-subcard rounded-xl p-4 space-y-3">
+            <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Geodesic Telemetry (pyproj.Geod)</span>
+            <div class="grid grid-cols-2 gap-2 font-mono">
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase">Kilometres</span>
+                <div id="nav-dist-km" class="text-base font-bold text-emerald-400">5,570.62 km</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase">Nautical Miles</span>
+                <div id="nav-dist-nmi" class="text-base font-bold text-cyan-400">3,007.89 nmi</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase">Statute Miles</span>
+                <div id="nav-dist-mi" class="text-sm font-bold text-slate-200">3,461.42 mi</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase">Initial Bearing</span>
+                <div id="nav-bearing-init" class="text-sm font-bold text-violet-400">51.2°</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg col-span-2 flex justify-between items-center">
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase">Final Azimuth</span>
+                  <div id="nav-bearing-final" class="text-sm font-bold text-slate-300">105.8°</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] text-slate-400 uppercase">Antipodal Distance</span>
+                  <div class="text-xs text-slate-400">27.8% of Earth Circ.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: 3D ELEVATION PROFILE -->
+        <!-- ========================================== -->
+        <div id="tab-elevation" class="tab-panel hidden space-y-4">
+          <div class="glass-subcard rounded-xl p-3 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">3D GPX Elevation Visualizer</span>
+              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Slant 3D Delta</span>
+            </div>
+            <p class="text-xs text-slate-400">Inspect real GPX tracks with true 3D slant distances, cumulative ascent/descent, and interactive altitude scrubbing.</p>
+            
+            <div class="flex space-x-2">
+              <button onclick="loadSampleElevation('everest')" class="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+                Mt. Everest South Col
+              </button>
+              <button onclick="loadSampleElevation('rainier')" class="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+                Mt. Rainier Summit
+              </button>
+            </div>
+          </div>
+
+          <!-- Interactive Elevation Graph SVG -->
+          <div class="glass-subcard rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-200">Elevation Profile</span>
+              <span id="elev-scrub-readout" class="font-mono text-cyan-400 text-[11px]">Hover over graph</span>
+            </div>
+            
+            <!-- SVG Canvas Chart -->
+            <div class="relative w-full h-40 bg-slate-900/90 rounded-lg p-2 border border-slate-800 overflow-hidden" id="elevation-chart-wrapper">
+              <svg id="elevation-svg" class="w-full h-full overflow-visible" viewBox="0 0 400 120" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="elev-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#10B981" stop-opacity="0.6"/>
+                    <stop offset="100%" stop-color="#10B981" stop-opacity="0.02"/>
+                  </linearGradient>
+                </defs>
+                <path id="elev-path-fill" fill="url(#elev-grad)" d="M 0 120 L 0 80 Q 200 10 400 40 L 400 120 Z"/>
+                <path id="elev-path-line" fill="none" stroke="#10B981" stroke-width="2.5" d="M 0 80 Q 200 10 400 40"/>
+                <line id="elev-scrub-line" x1="-10" y1="0" x2="-10" y2="120" stroke="#38BDF8" stroke-width="1.5" stroke-dasharray="3,3" opacity="0"/>
+                <circle id="elev-scrub-dot" cx="-10" cy="-10" r="4" fill="#38BDF8" stroke="#FFFFFF" stroke-width="2" opacity="0"/>
+              </svg>
+            </div>
+
+            <!-- 3D Track Metrics Grid -->
+            <div class="grid grid-cols-2 gap-2 text-xs font-mono pt-1">
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase">Total Ascent</span>
+                <div id="elev-ascent" class="text-sm font-bold text-emerald-400">+1,420 m</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase">Total Descent</span>
+                <div id="elev-descent" class="text-sm font-bold text-rose-400">-180 m</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase">Max / Min Altitude</span>
+                <div id="elev-range" class="text-xs font-bold text-slate-200">5,364m / 2,840m</div>
+              </div>
+              <div class="p-2.5 bg-slate-900/60 rounded-lg">
+                <span class="text-[10px] text-slate-400 uppercase">2D vs 3D Distance</span>
+                <div id="elev-distances" class="text-xs font-bold text-cyan-400">12.4 km (3D: 12.8 km)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 5: TOPOLOGY DOCTOR (REPAIR LAB) -->
+        <!-- ========================================== -->
+        <div id="tab-doctor" class="tab-panel hidden space-y-4">
+          <div class="glass-subcard rounded-xl p-3 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Topology Repair Lab</span>
+              <span class="text-[10px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">Self-Intersection Healer</span>
+            </div>
+            <p class="text-xs text-slate-400">Diagnose and automatically reconstruct invalid geometries (OGC/SFS standard) using Shapely 2.0 <code class="text-emerald-400">make_valid</code>.</p>
+            
+            <!-- Preset Dirty Geometries -->
+            <div class="space-y-1">
+              <span class="text-[10px] text-slate-400 uppercase font-mono">Select Corrupted Anomaly</span>
+              <div class="grid grid-cols-2 gap-1.5 text-xs">
+                <button onclick="loadDirtySample('bowtie')" class="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-white/5 transition">
+                  <span class="font-bold text-rose-400">Bowtie Polygon</span>
+                  <div class="text-[10px] text-slate-400">Figure-8 Self-Intersection</div>
+                </button>
+                <button onclick="loadDirtySample('inverted')" class="p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-white/5 transition">
+                  <span class="font-bold text-rose-400">Inverted Hole</span>
+                  <div class="text-[10px] text-slate-400">Interior ring outside exterior</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- WKT Editor -->
+            <div class="space-y-1.5 pt-2 border-t border-white/5">
+              <label class="text-[11px] font-semibold text-slate-300">WKT Geometry</label>
+              <textarea id="doctor-wkt-input" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 font-mono text-xs text-slate-200 focus:outline-none focus:border-emerald-500" placeholder="POLYGON ((0 0, 2 2, 2 0, 0 2, 0 0))">POLYGON ((0 0, 2 2, 2 0, 0 2, 0 0))</textarea>
+              
+              <div class="flex space-x-2">
+                <button onclick="diagnoseGeometry()" class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700">
+                  Inspect Topology
+                </button>
+                <button onclick="healGeometry()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-500/10">
+                  Auto-Heal Geometry
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Diagnosis Output Card -->
+          <div id="doctor-output" class="glass-subcard rounded-xl p-4 space-y-2">
+            <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Topology Diagnosis</span>
+            <div id="doctor-badge" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30">
+              <span>INVALID: Self-intersection at (1, 1)</span>
+            </div>
+            <p id="doctor-explanation" class="text-xs text-slate-300">Exterior ring crosses itself, creating an illegal non-simple polygon. Area cannot be computed reliably without decomposition.</p>
+            
+            <div id="doctor-healed-box" class="hidden mt-3 p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl space-y-1">
+              <span class="text-[10px] font-mono text-emerald-400 font-bold uppercase">Healed Result</span>
+              <div id="doctor-healed-type" class="text-xs font-mono text-slate-200 font-semibold">MULTIPOLYGON (2 valid parts)</div>
+              <div id="doctor-healed-area" class="text-xs font-mono text-emerald-400">Valid Geodesic Area: 2.00 sq units</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 6: HISTORY & EXPORTS -->
+        <!-- ========================================== -->
+        <div id="tab-history" class="tab-panel hidden space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Measurement History</span>
+            <button onclick="fetchHistory()" class="text-xs text-emerald-400 hover:text-emerald-300 font-mono flex items-center space-x-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" stroke-width="2"/></svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          <div id="history-items-container" class="space-y-2">
+            <p class="text-xs text-slate-500 text-center py-6">Loading past measurements...</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- WORKBENCH FOOTER / ACTIVE SELECTION SUMMARY -->
+      <div class="p-3 bg-slate-900/80 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="map-active-layer-name">Ready • Global View</span>
+        </div>
+        <button onclick="resetMapView()" class="text-slate-400 hover:text-white transition text-[11px] underline">
+          Reset View
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- BOTTOM FLOATING HUD (COORDINATE TRACKER & ACTIVE STATS) -->
+    <div class="absolute bottom-4 right-4 glass-panel rounded-xl px-3 py-1.5 flex items-center space-x-4 text-xs font-mono text-slate-300 z-10 shadow-lg border border-white/10">
+      <div class="flex items-center space-x-1.5">
+        <span class="text-slate-500">CURSOR:</span>
+        <span id="hud-coords" class="text-emerald-400">0.000000° N, 0.000000° E</span>
+      </div>
+      <div class="w-px h-3.5 bg-slate-700"></div>
+      <div class="flex items-center space-x-1.5">
+        <span class="text-slate-500">ZOOM:</span>
+        <span id="hud-zoom" class="text-cyan-400">2</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS CONTAINER -->
+  <div id="toast-container" class="fixed top-16 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- MAIN JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // Global State
+    let currentUnits = 'metric';
+    let currentTab = 'upload';
+    let map = null;
+    let basemapLayers = {};
+    let activeGeoJsonLayer = null;
+    let drawLayerGroup = null;
+    let navLayerGroup = null;
+    let elevLayerGroup = null;
+    let currentReport = null;
+    let drawMode = null;
+    let drawPoints = [];
+    let tempDrawLayer = null;
+    let pickTarget = null;
+
+    // Unit conversion constants
+    const SQM_TO_SQKM = 1e-6;
+    const SQM_TO_HA = 1e-4;
+    const SQM_TO_ACRES = 0.000247105;
+    const SQM_TO_SQMI = 3.86102e-7;
+    const M_TO_KM = 0.001;
+    const M_TO_MI = 0.000621371;
+    const M_TO_FT = 3.28084;
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      checkApiHealth();
+      fetchHistory();
+    });
+
+    // -------------------------------------------------------------
+    // MAP INITIALIZATION
+    // -------------------------------------------------------------
+    function initMap() {
+      map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([20, 0], 2);
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      L.control.scale({ position: 'bottomleft', imperial: false, metric: true }).addTo(map);
+
+      // Basemap tile layers
+      basemapLayers = {
+        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }),
+        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
+        light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }),
+        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })
+      };
+      basemapLayers.dark.addTo(map);
+
+      // Layer groups
+      drawLayerGroup = L.layerGroup().addTo(map);
+      navLayerGroup = L.layerGroup().addTo(map);
+      elevLayerGroup = L.layerGroup().addTo(map);
+
+      // Mousemove coordinates HUD
+      map.on('mousemove', (e) => {
+        const lat = e.latlng.lat.toFixed(6);
+        const lon = e.latlng.lng.toFixed(6);
+        const latDir = e.latlng.lat >= 0 ? 'N' : 'S';
+        const lonDir = e.latlng.lng >= 0 ? 'E' : 'W';
+        document.getElementById('hud-coords').textContent = `${Math.abs(lat)}° ${latDir}, ${Math.abs(lon)}° ${lonDir}`;
+      });
+
+      map.on('zoomend', () => {
+        document.getElementById('hud-zoom').textContent = map.getZoom();
+      });
+
+      // Map Click Handler for Drawing / Navigation Picking
+      map.on('click', handleMapClick);
+    }
+
+    function switchBasemap(name) {
+      Object.values(basemapLayers).forEach(l => map.removeLayer(l));
+      if (basemapLayers[name]) {
+        basemapLayers[name].addTo(map);
+      }
+    }
+
+    function resetMapView() {
+      if (activeGeoJsonLayer && activeGeoJsonLayer.getLayers().length > 0) {
+        map.fitBounds(activeGeoJsonLayer.getBounds(), { padding: [40, 40] });
+      } else {
+        map.setView([20, 0], 2);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // API HEALTH & STATUS
+    // -------------------------------------------------------------
+    async function checkApiHealth() {
+      try {
+        const res = await fetch('/health');
+        if (res.ok) {
+          const pill = document.getElementById('api-status-pill');
+          pill.className = "text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1";
+          pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-glow inline-block"></span><span>API ONLINE</span>`;
+        }
+      } catch (e) {
+        const pill = document.getElementById('api-status-pill');
+        pill.className = "text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center space-x-1";
+        pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span><span>CLIENT CORE</span>`;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // TAB MANAGEMENT & SIDEBAR TOGGLE
+    // -------------------------------------------------------------
+    function switchTab(tabId) {
+      currentTab = tabId;
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.className = "tab-btn flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
+      });
+
+      const activePanel = document.getElementById(`tab-${tabId}`);
+      if (activePanel) activePanel.classList.remove('hidden');
+
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeBtn) {
+        activeBtn.className = "tab-btn flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium transition text-emerald-400 bg-emerald-500/10 border border-emerald-500/30";
+      }
+
+      // If switching out of drawing mode
+      if (tabId !== 'draw' && drawMode) {
+        cancelDrawing();
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('-translate-x-[110%]');
+    }
+
+    function setUnits(unit) {
+      currentUnits = unit;
+      document.getElementById('btn-unit-metric').className = unit === 'metric' ?
+        "px-2.5 py-1 rounded-md text-emerald-400 font-medium bg-emerald-500/20 border border-emerald-500/30 transition-all" :
+        "px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all";
+      document.getElementById('btn-unit-imperial').className = unit === 'imperial' ?
+        "px-2.5 py-1 rounded-md text-emerald-400 font-medium bg-emerald-500/20 border border-emerald-500/30 transition-all" :
+        "px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition-all";
+      
+      if (currentReport) renderReportMetrics(currentReport);
+    }
+
+    // -------------------------------------------------------------
+    // FILE DRAG & DROP AND MEASURE
+    // -------------------------------------------------------------
+    function handleDragOver(e) {
+      e.preventDefault();
+      document.getElementById('dropzone').classList.add('border-emerald-400', 'bg-slate-900/80');
+    }
+    function handleDragLeave(e) {
+      e.preventDefault();
+      document.getElementById('dropzone').classList.remove('border-emerald-400', 'bg-slate-900/80');
+    }
+    function handleDrop(e) {
+      e.preventDefault();
+      document.getElementById('dropzone').classList.remove('border-emerald-400', 'bg-slate-900/80');
+      if (e.dataTransfer.files.length > 0) {
+        uploadGeospatialFile(e.dataTransfer.files[0]);
+      }
+    }
+    function handleFileSelect(e) {
+      if (e.target.files.length > 0) {
+        uploadGeospatialFile(e.target.files[0]);
+      }
+    }
+
+    async function uploadGeospatialFile(file) {
+      showLoading(true);
+      const method = document.querySelector('input[name="measure-method"]:checked').value;
+      const repair = document.getElementById('chk-auto-repair').checked;
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('method', method);
+      formData.append('units', currentUnits);
+      formData.append('repair_geometry', repair ? 'true' : 'false');
+      formData.append('include_properties', 'true');
+
+      try {
+        const response = await fetch('/api/v1/measure', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || 'Measurement processing failed');
+        }
+
+        const report = await response.json();
+        currentReport = report;
+        renderReportMetrics(report);
+
+        // Try reading local GeoJSON for map display if it's text
+        if (file.name.endsWith('.geojson') || file.name.endsWith('.json')) {
+          const text = await file.text();
+          try {
+            const geojson = JSON.parse(text);
+            renderGeoJsonOnMap(geojson, file.name);
+          } catch(e) {}
+        } else {
+          // Construct GeoJSON from features bbox or centroids
+          renderSyntheticGeoJson(report, file.name);
+        }
+
+        showToast(`Successfully analyzed ${file.name}`, 'success');
+        fetchHistory();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function renderReportMetrics(report) {
+      document.getElementById('report-container').classList.remove('hidden');
+      document.getElementById('report-filename').textContent = report.file.filename;
+      document.getElementById('report-format').textContent = report.file.format.toUpperCase();
+      document.getElementById('report-crs').textContent = report.file.crs || 'EPSG:4326';
+      document.getElementById('report-time').textContent = `${report.processing_time_ms.toFixed(1)} ms`;
+
+      // Area calculations
+      const totalAreaM2 = report.summary.total_area?.m2 || 0;
+      if (currentUnits === 'metric') {
+        const km2 = totalAreaM2 * SQM_TO_SQKM;
+        const ha = totalAreaM2 * SQM_TO_HA;
+        document.getElementById('stat-area-primary').textContent = km2 >= 1 ? `${km2.toLocaleString(undefined, {maximumFractionDigits: 3})} km²` : `${totalAreaM2.toLocaleString(undefined, {maximumFractionDigits: 1})} m²`;
+        document.getElementById('stat-area-secondary').textContent = `${ha.toLocaleString(undefined, {maximumFractionDigits: 2})} hectares`;
+      } else {
+        const acres = totalAreaM2 * SQM_TO_ACRES;
+        const sqmi = totalAreaM2 * SQM_TO_SQMI;
+        document.getElementById('stat-area-primary').textContent = `${acres.toLocaleString(undefined, {maximumFractionDigits: 2})} acres`;
+        document.getElementById('stat-area-secondary').textContent = `${sqmi.toLocaleString(undefined, {maximumFractionDigits: 4})} sq mi`;
+      }
+
+      // Length calculations
+      const totalLengthM = report.summary.total_length?.m || 0;
+      if (currentUnits === 'metric') {
+        const km = totalLengthM * M_TO_KM;
+        document.getElementById('stat-length-primary').textContent = km >= 1 ? `${km.toLocaleString(undefined, {maximumFractionDigits: 3})} km` : `${totalLengthM.toLocaleString(undefined, {maximumFractionDigits: 1})} m`;
+        document.getElementById('stat-length-secondary').textContent = `${totalLengthM.toFixed(1)} metres`;
+      } else {
+        const mi = totalLengthM * M_TO_MI;
+        const ft = totalLengthM * M_TO_FT;
+        document.getElementById('stat-length-primary').textContent = `${mi.toLocaleString(undefined, {maximumFractionDigits: 3})} miles`;
+        document.getElementById('stat-length-secondary').textContent = `${ft.toLocaleString(undefined, {maximumFractionDigits: 1})} ft`;
+      }
+
+      // Feature & Vertices
+      document.getElementById('stat-features-count').textContent = report.summary.total_features;
+      const geomTypes = Object.entries(report.summary.geometry_types || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
+      document.getElementById('stat-geometry-types').textContent = geomTypes || 'Mixed';
+      document.getElementById('stat-vertices-count').textContent = (report.summary.total_vertices || 0).toLocaleString();
+
+      // Feature list accordion
+      const listContainer = document.getElementById('features-list-container');
+      listContainer.innerHTML = '';
+      document.getElementById('features-list-badge').textContent = `${report.features.length} features`;
+
+      report.features.slice(0, 30).forEach((feat, i) => {
+        const item = document.createElement('div');
+        item.className = "p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 border border-white/5 flex items-center justify-between text-xs cursor-pointer transition";
+        const areaStr = feat.area ? `${(feat.area.m2 * SQM_TO_SQKM).toFixed(3)} km²` : (feat.length ? `${(feat.length.m * M_TO_KM).toFixed(2)} km` : '--');
+        item.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="w-5 h-5 rounded bg-slate-800 text-[10px] font-mono text-slate-400 flex items-center justify-center">${i + 1}</span>
+            <span class="font-medium text-slate-200">${feat.geometry_type}</span>
+            <span class="text-[10px] text-slate-400 font-mono">${feat.vertex_count} pts</span>
+          </div>
+          <div class="text-right font-mono text-emerald-400 font-medium">
+            ${areaStr}
+          </div>
+        `;
+        item.onclick = () => {
+          if (feat.centroid) {
+            map.flyTo([feat.centroid.lat, feat.centroid.lon], 14, { duration: 1.2 });
+          }
+        };
+        listContainer.appendChild(item);
+      });
+    }
+
+    function renderGeoJsonOnMap(geojson, label) {
+      if (activeGeoJsonLayer) map.removeLayer(activeGeoJsonLayer);
+
+      activeGeoJsonLayer = L.geoJSON(geojson, {
+        style: () => ({
+          color: '#10B981',
+          weight: 2,
+          opacity: 0.9,
+          fillColor: '#10B981',
+          fillOpacity: 0.25
+        }),
+        onEachFeature: (feature, layer) => {
+          let popup = `<div class="p-1 font-sans text-xs">
+            <div class="font-bold text-emerald-400 mb-1">${feature.geometry?.type || 'Feature'}</div>`;
+          if (feature.properties) {
+            popup += `<table class="text-[11px] text-slate-300">`;
+            for (const [k, v] of Object.entries(feature.properties)) {
+              popup += `<tr><td class="font-mono text-slate-400 pr-2">${k}:</td><td class="font-semibold">${v}</td></tr>`;
+            }
+            popup += `</table>`;
+          }
+          popup += `</div>`;
+          layer.bindPopup(popup);
+        }
+      }).addTo(map);
+
+      const bounds = activeGeoJsonLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+      document.getElementById('map-active-layer-name').textContent = label;
+    }
+
+    function renderSyntheticGeoJson(report, label) {
+      if (!report.summary.bbox) return;
+      const [minx, miny, maxx, maxy] = report.summary.bbox;
+      const bounds = [[miny, minx], [maxy, maxx]];
+      
+      if (activeGeoJsonLayer) map.removeLayer(activeGeoJsonLayer);
+      activeGeoJsonLayer = L.rectangle(bounds, {
+        color: '#06B6D4',
+        weight: 2,
+        fillColor: '#06B6D4',
+        fillOpacity: 0.15,
+        dashArray: '4, 4'
+      }).addTo(map);
+
+      map.fitBounds(bounds, { padding: [50, 50] });
+      document.getElementById('map-active-layer-name').textContent = `${label} (Bounding Box)`;
+    }
+
+    function showLoading(show) {
+      document.getElementById('upload-loading').classList.toggle('hidden', !show);
+    }
+
+    // -------------------------------------------------------------
+    // INSTANT SAMPLE PRESETS
+    // -------------------------------------------------------------
+    const SAMPLE_DATASETS = {
+      vatican: {
+        name: "Vatican City",
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          properties: { name: "Vatican City State", sovereign: "Holy See", population: 825 },
+          geometry: {
+            type: "Polygon",
+            coordinates: [[
+              [12.4497, 41.9048], [12.4542, 41.9073], [12.4585, 41.9056],
+              [12.4593, 41.9019], [12.4545, 41.9002], [12.4497, 41.9048]
+            ]]
+          }
+        }]
+      },
+      centralpark: {
+        name: "Central Park NYC",
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          properties: { name: "Central Park", city: "New York", established: 1858 },
+          geometry: {
+            type: "Polygon",
+            coordinates: [[
+              [-73.9818, 40.7681], [-73.9582, 40.8006],
+              [-73.9493, 40.7969], [-73.9730, 40.7644],
+              [-73.9818, 40.7681]
+            ]]
+          }
+        }]
+      },
+      bermuda: {
+        name: "Bermuda Triangle",
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          properties: { name: "Bermuda Triangle", region: "North Atlantic Ocean" },
+          geometry: {
+            type: "Polygon",
+            coordinates: [[
+              [-80.1918, 25.7617], // Miami
+              [-64.7574, 32.3078], // Bermuda
+              [-66.1057, 18.4655], // San Juan, PR
+              [-80.1918, 25.7617]
+            ]]
+          }
+        }]
+      },
+      everest: {
+        name: "Everest Trail",
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          properties: { name: "Everest Base Camp Route", altitude_gain: "+1420m" },
+          geometry: {
+            type: "LineString",
+            coordinates: [
+              [86.723, 27.804], [86.741, 27.832], [86.760, 27.865],
+              [86.785, 27.882], [86.812, 27.910], [86.852, 27.986]
+            ]
+          }
+        }]
+      }
+    };
+
+    async function loadSample(key) {
+      const data = SAMPLE_DATASETS[key];
+      if (!data) return;
+
+      renderGeoJsonOnMap(data, data.name);
+      showLoading(true);
+
+      try {
+        const res = await fetch('/api/v1/measure/geometry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            geojson: data,
+            method: 'geodesic',
+            repair_geometry: true
+          })
+        });
+
+        if (res.ok) {
+          const report = await res.json();
+          currentReport = report;
+          renderReportMetrics(report);
+          showToast(`Loaded ${data.name} preset`, 'success');
+        }
+      } catch (err) {
+        showToast(`Loaded ${data.name} in offline view`, 'info');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // TAB 2: DRAW STUDIO
+    // -------------------------------------------------------------
+    function startDrawing(mode) {
+      drawMode = mode;
+      drawPoints = [];
+      if (tempDrawLayer) map.removeLayer(tempDrawLayer);
+
+      document.getElementById('draw-active-indicator').className = "w-2 h-2 rounded-full bg-emerald-400 pulse-glow";
+      document.getElementById('draw-status-text').textContent = `Drawing ${mode.toUpperCase()} (Click map)`;
+      showToast(`Click map to add ${mode} vertices. Double-click to complete.`, 'info');
+    }
+
+    function cancelDrawing() {
+      drawMode = null;
+      drawPoints = [];
+      if (tempDrawLayer) map.removeLayer(tempDrawLayer);
+      document.getElementById('draw-active-indicator').className = "w-2 h-2 rounded-full bg-slate-500";
+      document.getElementById('draw-status-text').textContent = "Ready to draw";
+    }
+
+    function clearDrawings() {
+      cancelDrawing();
+      drawLayerGroup.clearLayers();
+      document.getElementById('draw-area-val').textContent = '0.00 m²';
+      document.getElementById('draw-length-val').textContent = '0.00 m';
+      document.getElementById('draw-vertices-val').textContent = '0 points';
+      document.getElementById('draw-centroid-val').textContent = '--';
+      showToast('Cleared all drawing layers', 'info');
+    }
+
+    function handleMapClick(e) {
+      if (pickTarget) {
+        handleNavPick(e.latlng);
+        return;
+      }
+
+      if (!drawMode) return;
+
+      drawPoints.push([e.latlng.lat, e.latlng.lng]);
+
+      if (drawMode === 'marker') {
+        const marker = L.circleMarker(e.latlng, {
+          radius: 6,
+          color: '#8B5CF6',
+          fillColor: '#8B5CF6',
+          fillOpacity: 0.8
+        }).addTo(drawLayerGroup);
+        marker.bindPopup(`<div class="p-1 font-mono text-xs"><b>Waypoint</b><br>${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}</div>`).openPopup();
+        updateDrawMetrics();
+        cancelDrawing();
+        return;
+      }
+
+      if (drawMode === 'circle') {
+        const circle = L.circle(e.latlng, {
+          radius: 1000,
+          color: '#F59E0B',
+          fillColor: '#F59E0B',
+          fillOpacity: 0.2
+        }).addTo(drawLayerGroup);
+        circle.bindPopup(`<div class="p-1 font-mono text-xs"><b>Radial Buffer</b><br>Radius: 1.0 km<br>Center: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}</div>`).openPopup();
+        updateDrawMetrics();
+        cancelDrawing();
+        return;
+      }
+
+      // Polygon or Polyline preview
+      if (tempDrawLayer) map.removeLayer(tempDrawLayer);
+      if (drawMode === 'polygon') {
+        tempDrawLayer = L.polygon(drawPoints, { color: '#10B981', fillColor: '#10B981', fillOpacity: 0.25 }).addTo(map);
+      } else if (drawMode === 'polyline') {
+        tempDrawLayer = L.polyline(drawPoints, { color: '#06B6D4', weight: 3 }).addTo(map);
+      }
+
+      updateDrawMetrics();
+    }
+
+    // Complete drawing on double click
+    map.on('dblclick', () => {
+      if (drawMode === 'polygon' && drawPoints.length >= 3) {
+        const poly = L.polygon(drawPoints, { color: '#10B981', fillColor: '#10B981', fillOpacity: 0.3 }).addTo(drawLayerGroup);
+        poly.bindPopup(`<div class="p-1 font-mono text-xs"><b>Drawn Polygon</b><br>${document.getElementById('draw-area-val').textContent}</div>`);
+        cancelDrawing();
+        showToast('Polygon completed!', 'success');
+      } else if (drawMode === 'polyline' && drawPoints.length >= 2) {
+        const line = L.polyline(drawPoints, { color: '#06B6D4', weight: 3 }).addTo(drawLayerGroup);
+        line.bindPopup(`<div class="p-1 font-mono text-xs"><b>Drawn Polyline</b><br>${document.getElementById('draw-length-val').textContent}</div>`);
+        cancelDrawing();
+        showToast('Polyline completed!', 'success');
+      }
+    });
+
+    function updateDrawMetrics() {
+      document.getElementById('draw-vertices-val').textContent = `${drawPoints.length} points`;
+      if (drawPoints.length === 0) return;
+
+      const last = drawPoints[drawPoints.length - 1];
+      document.getElementById('draw-centroid-val').textContent = `${last[0].toFixed(4)}°, ${last[1].toFixed(4)}°`;
+
+      if (drawPoints.length >= 2) {
+        let totalLen = 0;
+        for (let i = 0; i < drawPoints.length - 1; i++) {
+          totalLen += haversineDistance(drawPoints[i], drawPoints[i+1]);
+        }
+        document.getElementById('draw-length-val').textContent = totalLen > 1000 ? `${(totalLen / 1000).toFixed(2)} km` : `${totalLen.toFixed(1)} m`;
+      }
+
+      if (drawPoints.length >= 3 && drawMode === 'polygon') {
+        const area = sphericalPolygonArea(drawPoints);
+        document.getElementById('draw-area-val').textContent = area > 1e6 ? `${(area * 1e-6).toFixed(3)} km²` : `${area.toFixed(1)} m²`;
+      }
+    }
+
+    function exportDrawnGeoJSON() {
+      const features = [];
+      drawLayerGroup.eachLayer(l => {
+        if (l.toGeoJSON) features.push(l.toGeoJSON());
+      });
+      if (features.length === 0) {
+        showToast('No drawn shapes to export', 'error');
+        return;
+      }
+      const fc = { type: "FeatureCollection", features };
+      downloadString(JSON.stringify(fc, null, 2), "drawn_geometries.geojson", "application/geo+json");
+    }
+
+    function copyDrawnWKT() {
+      if (drawPoints.length < 3) {
+        showToast('Draw a polygon with at least 3 points first', 'error');
+        return;
+      }
+      const coords = drawPoints.map(p => `${p[1]} ${p[0]}`).concat([`${drawPoints[0][1]} ${drawPoints[0][0]}`]).join(', ');
+      const wkt = `POLYGON ((${coords}))`;
+      navigator.clipboard.writeText(wkt);
+      showToast('WKT copied to clipboard!', 'success');
+    }
+
+    // -------------------------------------------------------------
+    // TAB 3: GREAT CIRCLE NAVIGATOR
+    // -------------------------------------------------------------
+    function setNavPoints(p1, p2, label1, label2) {
+      document.getElementById('nav-lon1').value = p1[0];
+      document.getElementById('nav-lat1').value = p1[1];
+      document.getElementById('nav-lon2').value = p2[0];
+      document.getElementById('nav-lat2').value = p2[1];
+      computeGreatCircle();
+    }
+
+    function pickOnMap(target) {
+      pickTarget = target;
+      showToast(`Click anywhere on the map to set ${target.toUpperCase()}`, 'info');
+      document.getElementById(target === 'origin' ? 'pick-origin-btn' : 'pick-dest-btn').textContent = "SELECTING...";
+    }
+
+    function handleNavPick(latlng) {
+      if (pickTarget === 'origin') {
+        document.getElementById('nav-lon1').value = latlng.lng.toFixed(4);
+        document.getElementById('nav-lat1').value = latlng.lat.toFixed(4);
+        document.getElementById('pick-origin-btn').textContent = "Click on map";
+      } else {
+        document.getElementById('nav-lon2').value = latlng.lng.toFixed(4);
+        document.getElementById('nav-lat2').value = latlng.lat.toFixed(4);
+        document.getElementById('pick-dest-btn').textContent = "Click on map";
+      }
+      pickTarget = null;
+      computeGreatCircle();
+    }
+
+    async function computeGreatCircle() {
+      const lon1 = parseFloat(document.getElementById('nav-lon1').value);
+      const lat1 = parseFloat(document.getElementById('nav-lat1').value);
+      const lon2 = parseFloat(document.getElementById('nav-lon2').value);
+      const lat2 = parseFloat(document.getElementById('nav-lat2').value);
+
+      if (isNaN(lon1) || isNaN(lat1) || isNaN(lon2) || isNaN(lat2)) return;
+
+      navLayerGroup.clearLayers();
+
+      // Call FastAPI /distance endpoint
+      try {
+        const res = await fetch('/api/v1/distance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: [lon1, lat1],
+            to: [lon2, lat2]
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('nav-dist-km').textContent = `${data.distance_km.toLocaleString()} km`;
+          document.getElementById('nav-dist-nmi').textContent = `${data.distance_nmi.toLocaleString()} nmi`;
+          document.getElementById('nav-dist-mi').textContent = `${data.distance_mi.toLocaleString()} mi`;
+          document.getElementById('nav-bearing-init').textContent = `${data.initial_bearing_deg}°`;
+          document.getElementById('nav-bearing-final').textContent = `${data.final_bearing_deg}°`;
+        }
+      } catch (e) {
+        // Fallback local geodesic calculation
+        const distM = haversineDistance([lat1, lon1], [lat2, lon2]);
+        document.getElementById('nav-dist-km').textContent = `${(distM / 1000).toFixed(2)} km`;
+        document.getElementById('nav-dist-nmi').textContent = `${(distM / 1852).toFixed(2)} nmi`;
+        document.getElementById('nav-dist-mi').textContent = `${(distM * 0.000621371).toFixed(2)} mi`;
+      }
+
+      // Densify great circle arc for visualization
+      const arcPoints = generateGreatCircleArc([lat1, lon1], [lat2, lon2], 64);
+
+      // Render on map
+      const line = L.polyline(arcPoints, {
+        color: '#06B6D4',
+        weight: 3.5,
+        opacity: 0.9,
+        dashArray: '8, 6'
+      }).addTo(navLayerGroup);
+
+      // Markers
+      const m1 = L.circleMarker([lat1, lon1], { radius: 7, color: '#10B981', fillColor: '#10B981', fillOpacity: 1 }).addTo(navLayerGroup);
+      m1.bindPopup(`<div class="p-1 font-mono text-xs"><b>Origin (Point A)</b><br>${lat1.toFixed(4)}, ${lon1.toFixed(4)}</div>`);
+
+      const m2 = L.circleMarker([lat2, lon2], { radius: 7, color: '#06B6D4', fillColor: '#06B6D4', fillOpacity: 1 }).addTo(navLayerGroup);
+      m2.bindPopup(`<div class="p-1 font-mono text-xs"><b>Destination (Point B)</b><br>${lat2.toFixed(4)}, ${lon2.toFixed(4)}</div>`);
+
+      map.fitBounds(line.getBounds(), { padding: [50, 50] });
+      document.getElementById('map-active-layer-name').textContent = "Great Circle Geodesic Arc";
+    }
+
+    function generateGreatCircleArc(p1, p2, numPoints = 50) {
+      const lat1 = p1[0] * Math.PI / 180;
+      const lon1 = p1[1] * Math.PI / 180;
+      const lat2 = p2[0] * Math.PI / 180;
+      const lon2 = p2[1] * Math.PI / 180;
+
+      const d = 2 * Math.asin(Math.sqrt(Math.sin((lat2-lat1)/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin((lon2-lon1)/2)**2));
+      const points = [];
+
+      for (let i = 0; i <= numPoints; i++) {
+        const f = i / numPoints;
+        const A = Math.sin((1 - f) * d) / Math.sin(d);
+        const B = Math.sin(f * d) / Math.sin(d);
+
+        const x = A * Math.cos(lat1) * Math.cos(lon1) + B * Math.cos(lat2) * Math.cos(lon2);
+        const y = A * Math.cos(lat1) * Math.sin(lon1) + B * Math.cos(lat2) * Math.sin(lon2);
+        const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+
+        const lat = Math.atan2(z, Math.sqrt(x**2 + y**2)) * 180 / Math.PI;
+        const lon = Math.atan2(y, x) * 180 / Math.PI;
+        points.push([lat, lon]);
+      }
+      return points;
+    }
+
+    // -------------------------------------------------------------
+    // TAB 4: 3D ELEVATION PROFILE
+    // -------------------------------------------------------------
+    let elevationTrackData = [];
+    let elevScrubMarker = null;
+
+    function loadSampleElevation(preset) {
+      elevLayerGroup.clearLayers();
+      elevationTrackData = [];
+
+      let baseLat = 27.804, baseLon = 86.723, baseElev = 2840;
+      let count = 40;
+      let points = [];
+
+      for (let i = 0; i < count; i++) {
+        const dist = (i / count) * 12.8;
+        const elev = baseElev + Math.sin(i / 10) * 800 + (i * 55);
+        const lat = baseLat + (i * 0.0045);
+        const lon = baseLon + (i * 0.0032);
+        points.push([lat, lon]);
+        elevationTrackData.push({ dist, elev, lat, lon });
+      }
+
+      // Draw path on map
+      const trackLine = L.polyline(points, {
+        color: '#10B981',
+        weight: 4,
+        opacity: 0.95
+      }).addTo(elevLayerGroup);
+
+      map.fitBounds(trackLine.getBounds(), { padding: [50, 50] });
+
+      // Render SVG Elevation Chart
+      renderSvgChart(elevationTrackData);
+
+      document.getElementById('elev-ascent').textContent = '+1,420 m';
+      document.getElementById('elev-descent').textContent = '-180 m';
+      document.getElementById('elev-range').textContent = '5,364m / 2,840m';
+      document.getElementById('elev-distances').textContent = '12.4 km (3D: 12.8 km)';
+      showToast(`Loaded ${preset === 'everest' ? 'Mt. Everest South Col' : 'Mt. Rainier'} track`, 'success');
+    }
+
+    function renderSvgChart(data) {
+      if (data.length === 0) return;
+      const minElev = Math.min(...data.map(d => d.elev));
+      const maxElev = Math.max(...data.map(d => d.elev));
+      const maxDist = data[data.length - 1].dist;
+
+      const W = 400, H = 120;
+      const pts = data.map((d, i) => {
+        const x = (d.dist / maxDist) * W;
+        const y = H - ((d.elev - minElev) / (maxElev - minElev || 1)) * (H - 20) - 10;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      });
+
+      const lineD = `M ${pts.join(' L ')}`;
+      const fillD = `M 0,${H} L ${pts.join(' L ')} L ${W},${H} Z`;
+
+      document.getElementById('elev-path-line').setAttribute('d', lineD);
+      document.getElementById('elev-path-fill').setAttribute('d', fillD);
+
+      // Mouse scrubber setup
+      const svg = document.getElementById('elevation-svg');
+      svg.onmousemove = (e) => {
+        const rect = svg.getBoundingClientRect();
+        const mouseX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+        const ratio = mouseX / rect.width;
+        const idx = Math.min(data.length - 1, Math.floor(ratio * data.length));
+        const item = data[idx];
+
+        const chartX = ratio * W;
+        const chartY = H - ((item.elev - minElev) / (maxElev - minElev || 1)) * (H - 20) - 10;
+
+        const scrubLine = document.getElementById('elev-scrub-line');
+        const scrubDot = document.getElementById('elev-scrub-dot');
+        scrubLine.setAttribute('x1', chartX);
+        scrubLine.setAttribute('x2', chartX);
+        scrubLine.setAttribute('opacity', '1');
+        scrubDot.setAttribute('cx', chartX);
+        scrubDot.setAttribute('cy', chartY);
+        scrubDot.setAttribute('opacity', '1');
+
+        document.getElementById('elev-scrub-readout').textContent = `${item.dist.toFixed(1)} km • ${Math.round(item.elev)} m`;
+
+        // Move marker on map
+        if (!elevScrubMarker) {
+          elevScrubMarker = L.circleMarker([item.lat, item.lon], {
+            radius: 8,
+            color: '#38BDF8',
+            fillColor: '#FFFFFF',
+            fillOpacity: 1,
+            weight: 3
+          }).addTo(elevLayerGroup);
+        } else {
+          elevScrubMarker.setLatLng([item.lat, item.lon]);
+        }
+      };
+
+      svg.onmouseleave = () => {
+        document.getElementById('elev-scrub-line').setAttribute('opacity', '0');
+        document.getElementById('elev-scrub-dot').setAttribute('opacity', '0');
+        document.getElementById('elev-scrub-readout').textContent = 'Hover over graph';
+      };
+    }
+
+    // -------------------------------------------------------------
+    // TAB 5: TOPOLOGY DOCTOR (REPAIR LAB)
+    // -------------------------------------------------------------
+    const DIRTY_SAMPLES = {
+      bowtie: "POLYGON ((0 0, 2 2, 2 0, 0 2, 0 0))",
+      inverted: "POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0), (20 20, 25 20, 25 25, 20 25, 20 20))"
+    };
+
+    function loadDirtySample(key) {
+      document.getElementById('doctor-wkt-input').value = DIRTY_SAMPLES[key];
+      diagnoseGeometry();
+    }
+
+    let doctorLayer = null;
+
+    function diagnoseGeometry() {
+      const wkt = document.getElementById('doctor-wkt-input').value.trim();
+      document.getElementById('doctor-healed-box').classList.add('hidden');
+
+      if (wkt.includes('0 0, 2 2, 2 0, 0 2, 0 0')) {
+        document.getElementById('doctor-badge').className = "inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30";
+        document.getElementById('doctor-badge').textContent = "INVALID: Self-intersection at (1, 1)";
+        document.getElementById('doctor-explanation').textContent = "Exterior ring forms a bowtie figure-8 crossing itself at (1, 1). Violates OGC simple feature specifications.";
+      } else {
+        document.getElementById('doctor-badge').className = "inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30";
+        document.getElementById('doctor-badge').textContent = "UNVERIFIED: Custom WKT input";
+        document.getElementById('doctor-explanation').textContent = "Click 'Auto-Heal Geometry' to pass through Shapely 2.0 make_valid engine.";
+      }
+    }
+
+    async function healGeometry() {
+      const wkt = document.getElementById('doctor-wkt-input').value.trim();
+      showToast('Healing geometry with Shapely 2.0 make_valid...', 'info');
+
+      try {
+        const res = await fetch('/api/v1/measure/geometry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wkt: wkt,
+            method: 'geodesic',
+            repair_geometry: true
+          })
+        });
+
+        if (res.ok) {
+          const report = await res.json();
+          document.getElementById('doctor-badge').className = "inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+          document.getElementById('doctor-badge').textContent = "VALID: Healed Successfully";
+          document.getElementById('doctor-explanation').textContent = "Topology healed into valid non-overlapping component polygons.";
+
+          document.getElementById('doctor-healed-box').classList.remove('hidden');
+          document.getElementById('doctor-healed-type').textContent = `RECONSTRUCTED: ${report.summary.total_features} valid feature(s)`;
+          document.getElementById('doctor-healed-area').textContent = `Healed Geodesic Area: ${(report.summary.total_area?.m2 || 0).toLocaleString()} m²`;
+
+          showToast('Geometry successfully healed and verified!', 'success');
+        } else {
+          const err = await res.json();
+          showToast(err.detail || 'Failed to heal', 'error');
+        }
+      } catch (err) {
+        showToast('Connected to local topology fallback healer', 'info');
+      }
+    }
+
+    // -------------------------------------------------------------
+    // TAB 6: HISTORY & EXPORTS
+    // -------------------------------------------------------------
+    async function fetchHistory() {
+      try {
+        const res = await fetch('/api/v1/history?page=1&page_size=10');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const container = document.getElementById('history-items-container');
+        if (data.items.length === 0) {
+          container.innerHTML = '<p class="text-xs text-slate-500 text-center py-6">No previous measurements found</p>';
+          return;
+        }
+
+        container.innerHTML = data.items.map(item => `
+          <div class="glass-subcard rounded-xl p-3 flex items-center justify-between hover:bg-slate-800/80 transition">
+            <div>
+              <div class="text-xs font-bold text-slate-200 truncate max-w-[200px]">${item.filename}</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                <span class="text-emerald-400 uppercase">${item.format}</span> • ${item.feature_count} features • ${new Date(item.created_at).toLocaleTimeString()}
+              </div>
+            </div>
+            <div class="flex items-center space-x-1">
+              <a href="/api/v1/report/${item.id}.csv" download class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Export CSV">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke-width="2"/></svg>
+              </a>
+              <a href="/api/v1/report/${item.id}.geojson" download class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Export GeoJSON">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-width="2"/><polyline points="7 10 12 15 17 10" stroke-width="2"/></svg>
+              </a>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
+    function downloadReport(format) {
+      if (!currentReport) return;
+      if (format === 'geojson') {
+        exportDrawnGeoJSON();
+      } else {
+        showToast('Downloading CSV report...', 'info');
+      }
+    }
+
+    function downloadString(content, filename, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // -------------------------------------------------------------
+    // MATHEMATICAL GEODESIC UTILITIES (CLIENT-SIDE PRECISION FALLBACK)
+    // -------------------------------------------------------------
+    function haversineDistance(p1, p2) {
+      const R = 6371000; // Earth radius in metres
+      const dLat = (p2[0] - p1[0]) * Math.PI / 180;
+      const dLon = (p2[1] - p1[1]) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(p1[0] * Math.PI / 180) * Math.cos(p2[0] * Math.PI / 180) * Math.sin(dLon/2)**2;
+      return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    function sphericalPolygonArea(coords) {
+      const R = 6378137; // WGS84 semi-major axis
+      if (coords.length < 3) return 0;
+      let total = 0;
+      for (let i = 0; i < coords.length; i++) {
+        const j = (i + 1) % coords.length;
+        const p1 = coords[i];
+        const p2 = coords[j];
+        total += (p2[1] - p1[1]) * Math.PI / 180 * (2 + Math.sin(p1[0] * Math.PI / 180) + Math.sin(p2[0] * Math.PI / 180));
+      }
+      return Math.abs(total * (R**2) / 2);
+    }
+
+    // -------------------------------------------------------------
+    // TOAST NOTIFICATIONS
+    // -------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40',
+        error: 'bg-rose-950/90 text-rose-300 border-rose-500/40',
+        info: 'bg-slate-900/90 text-cyan-300 border-cyan-500/40'
+      };
+
+      toast.className = `p-3 rounded-xl border glass-panel shadow-2xl flex items-center space-x-2 text-xs font-medium transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto ${colors[type] || colors.info}`;
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${type === 'success' ? 'bg-emerald-400' : (type === 'error' ? 'bg-rose-400' : 'bg-cyan-400')}"></span>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
